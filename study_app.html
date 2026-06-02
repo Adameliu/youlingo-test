@@ -469,6 +469,7 @@ function startStudy(mi, si) {
     curSecIdx = si;
     saveState();
     var sec = langData[mi].sections[si];
+    document.getElementById("scr-modules").classList.add("hide");
     document.getElementById("scr-sections").classList.add("hide");
     document.getElementById("scr-study").classList.remove("hide");
     document.getElementById("study-sec-name").textContent = sec.name.substring(0,45);
