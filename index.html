@@ -259,9 +259,8 @@ function loadProg() {
                     merged = true;
                 }
             }
-            for(var k in prog) {
-                if(!d[k]) { delete prog[k]; merged = true; }
-            }
+            // Note: We do NOT delete local entries missing from remote,
+            // so demo-before-login progress survives first-time sync.
             if(merged) saveProg();
         }
         renderMods();
