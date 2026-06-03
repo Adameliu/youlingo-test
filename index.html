@@ -853,7 +853,7 @@ var langFiles = {"german": "study_data_compact.json", "english": "english_data.j
 var langInfo = {"german": {"name": "Deutsch", "flag": "🇩🇪"}, "english": {"name": "English", "flag": "🇬🇧"}};
 
 function switchLang(lang) {
-    currentLang = lang;
+    var currentLang = lang;
     document.getElementById("btn-lang-de").className = lang==="german" ? "btn btn-lg btn-primary" : "btn btn-lg btn-outline-secondary";
     document.getElementById("btn-lang-en").className = lang==="english" ? "btn btn-lg btn-primary" : "btn btn-lg btn-outline-secondary";
     var info = langInfo[lang];
