@@ -535,6 +535,7 @@ function startStudy(mi, si) {
         saveProg();
     }
     var typeOrder = ["dictation","dictationChinese","meaningChinese","word","multi","gender","plural","feminine","pastParticiple","isSeparable","presentTenseConjugation","pastTenseConjugation","konjunktivII","imperativ","comparativ","superlativ","phrase","custom","array","一般"];
+    // 词组式出题：按类型分组 → 同类型内按 word._id 聚合 → 词组间随机
     var groups = {};
     for(var ci=0; ci<available.length; ci++) {
         var c = available[ci];
@@ -547,11 +548,25 @@ function startStudy(mi, si) {
         var t = typeOrder[ti];
         if(groups[t]) {
             var g = groups[t].slice();
-            for(var i=g.length-1; i>0; i--) {
-                var j = Math.floor(Math.random()*(i+1));
-                var tmp = g[i]; g[i] = g[j]; g[j] = tmp;
+            // 按 word._id 分组（同词卡片在一起）
+            var byWord = {}, noWord = [];
+            for(var i=0; i<g.length; i++) {
+                var wid = (g[i].word && g[i].word._id) ? g[i].word._id.toString() : null;
+                if(wid) { if(!byWord[wid]) byWord[wid]=[]; byWord[wid].push(g[i]); }
+                else noWord.push(g[i]);
             }
-            for(var i=0; i<g.length; i++) cards.push(g[i]);
+            // 词组间随机打乱
+            var wordKeys = Object.keys(byWord);
+            for(var i=wordKeys.length-1; i>0; i--) {
+                var j = Math.floor(Math.random()*(i+1));
+                var tmp = wordKeys[i]; wordKeys[i] = wordKeys[j]; wordKeys[j] = tmp;
+            }
+            // 输出：同词卡片连续，词间随机
+            for(var wi=0; wi<wordKeys.length; wi++) {
+                var wg = byWord[wordKeys[wi]];
+                for(var i=0; i<wg.length; i++) cards.push(wg[i]);
+            }
+            for(var i=0; i<noWord.length; i++) cards.push(noWord[i]);
         }
     }
     cardIdx = 0;
@@ -909,8 +924,20 @@ function startStudyAll() {
             var t = typeOrder[ti];
             if(groups[t]) {
                 var g = groups[t].slice();
-                for(var i=g.length-1; i>0; i--) { var j=Math.floor(Math.random()*(i+1)); var tmp=g[i]; g[i]=g[j]; g[j]=tmp; }
-                for(var i=0; i<g.length; i++) result.push(g[i]);
+                // 按 word._id 分组（同词卡片连续）
+                var byWord = {}, noWord = [];
+                for(var i=0; i<g.length; i++) {
+                    var wid = (g[i].card.word && g[i].card.word._id) ? g[i].card.word._id.toString() : null;
+                    if(wid) { if(!byWord[wid]) byWord[wid]=[]; byWord[wid].push(g[i]); }
+                    else noWord.push(g[i]);
+                }
+                var wordKeys = Object.keys(byWord);
+                for(var i=wordKeys.length-1; i>0; i--) { var j=Math.floor(Math.random()*(i+1)); var tmp=wordKeys[i]; wordKeys[i]=wordKeys[j]; wordKeys[j]=tmp; }
+                for(var wi=0; wi<wordKeys.length; wi++) {
+                    var wg = byWord[wordKeys[wi]];
+                    for(var i=0; i<wg.length; i++) result.push(wg[i]);
+                }
+                for(var i=0; i<noWord.length; i++) result.push(noWord[i]);
             }
         }
         return result;
