@@ -12,3 +12,5 @@ Thumbs.db
 
 # 临时文件
 tmp_*.js
+sharplingo_monitor.js
+.codegraph/

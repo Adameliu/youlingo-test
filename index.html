@@ -74,6 +74,7 @@ body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI
 <div class="d-flex align-items-center ms-auto" style="gap:6px;flex-wrap:wrap;font-size:.75rem">
 <span id="today-cnt" class="text-muted">今日: 0</span>
 <span id="review-cnt" class="text-muted">待复习: 0</span>
+<span id="streak-cnt" class="text-muted" style="display:none">🔥<span id="streak-num">0</span>天</span>
 <button class="btn btn-sm btn-success" id="btn-install" style="border-radius:12px;padding:0 8px;font-size:.7rem;line-height:22px" onclick="installApp()">📲安装</button>
 <button class="btn btn-sm btn-outline-secondary" style="border-radius:12px;padding:0 8px;font-size:.7rem;line-height:22px" onclick="doLogout()">🚪退出</button>
 </div>
@@ -162,6 +163,12 @@ function showFatal(msg) {
 
 const STORAGE_KEY = "youlingo_progress_v2";
 
+// XSS-safe HTML escaping for plain text inserted via innerHTML
+function esc(s) {
+    if(!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 var curModIdx = -1, curSecIdx = -1;
 var STATE_KEY = "youlingo_state";
 
@@ -192,6 +199,7 @@ var cards = [], cardIdx = 0, curCard = null;
 var sessStats = {ok:0, no:0, tot:0};
 var prog = {};
 var _audio = null;
+var _cardShownAt = 0; // 卡片显示时间戳，用于判断答题速度
 
 // Firebase
 var firebaseConfig = {
@@ -280,6 +288,46 @@ function loadProg() {
 
 loadProg();
 // Load today count from localStorage + Firebase sync
+// Streak tracking
+function getTodayKey() {
+    var td = new Date();
+    return td.getFullYear()+'-'+(td.getMonth()+1)+'-'+td.getDate();
+}
+function getYesterdayKey() {
+    var yd = new Date(Date.now() - 86400000);
+    return yd.getFullYear()+'-'+(yd.getMonth()+1)+'-'+yd.getDate();
+}
+function updateStreak() {
+    try {
+        var tk = getTodayKey();
+        var yk = getYesterdayKey();
+        var streak = JSON.parse(localStorage.getItem('y_streak') || '{}');
+        if(streak.d === tk) return; // 今天已更新过
+        if(streak.d === yk) {
+            streak.s = (streak.s || 1) + 1; // 连续
+        } else {
+            streak.s = 1; // 中断或首次
+        }
+        streak.d = tk;
+        localStorage.setItem('y_streak', JSON.stringify(streak));
+        showStreak(streak.s);
+    } catch(e){}
+}
+function showStreak(s) {
+    if(!s || s < 2) return; // 不显示1天的streak
+    var el = document.getElementById('streak-cnt');
+    var num = document.getElementById('streak-num');
+    if(el && num) { num.textContent = s; el.style.display = ''; }
+}
+// Load streak on startup
+try {
+    var streak = JSON.parse(localStorage.getItem('y_streak') || '{}');
+    if(streak.d === getTodayKey() || streak.d === getYesterdayKey()) {
+        showStreak(streak.s);
+    }
+} catch(e){}
+// Update streak when user studies (called from submitAns)
+function onStudyComplete() { updateStreak(); }
 try {
     var sd = JSON.parse(localStorage.getItem('y_stats')||'{}');
     var td = new Date(), tk = td.getFullYear()+'-'+(td.getMonth()+1)+'-'+td.getDate();
@@ -512,6 +560,7 @@ function startStudy(mi, si) {
 }
 
 function showCard() {
+    _cardShownAt = Date.now(); // 记录卡片显示时间
     saveState();
     while(cardIdx < cards.length && prog[cards[cardIdx].i] && prog[cards[cardIdx].i].m) cardIdx++;
     if(cardIdx >= cards.length) { showHooray(); return; }
@@ -521,6 +570,18 @@ function showCard() {
     document.getElementById("card-num").textContent = (cardIdx+1)+"/"+cards.length;
     document.getElementById("spfill").style.width = (cardIdx/cards.length*100)+"%";
     renderQ(curCard.q || "");
+    
+    // 显示42天推迟提示（如果这张卡片之前被推迟过）
+    var _p42check = prog[curCard.i];
+    if(_p42check && _p42check.p42) {
+        var _fb42 = document.getElementById("fb");
+        _fb42.className = "fb ok";
+        _fb42.style.background = "#e8f4fd";
+        _fb42.style.color = "#0c5460";
+        _fb42.style.border = "1px solid #bee5eb";
+        _fb42.innerHTML = "⏰ 这是您 42 天前推迟的卡片，现在该复习了！";
+        _fb42.classList.remove("hide");
+    }
     
         // Multi-field area - for conjugation tables etc.
     var mfArea = document.getElementById("multi-fields-area"); mfArea.innerHTML = "";
@@ -688,11 +749,45 @@ function submitAns() {
         document.getElementById("btn-42").classList.remove("hide");
         var p = prog[curCard.i] || {};
         p.r = (p.r||0) + 1;
-        // 间隔重复: 1h -> 2h -> 5h -> 25h -> 4d -> 10d -> 20d -> 40d
-        var levels = [1, 2, 5, 25, 4, 10, 20, 40];
-        var idx = Math.min(p.r - 1, levels.length - 1);
-        if(p.r <= 4) { p.i = levels[idx]; p.n = Date.now() + p.i * 3600000; }
-        else { p.i = levels[idx]; p.n = Date.now() + p.i * 86400000; }
+        var ef = p.e || 2.5;
+        var prevI = p.i || 0;
+        var _answerTime = Date.now() - _cardShownAt; // 答题用时(毫秒)
+        var _isFast = _answerTime < 15000 && (p.w || 0) === 0; // 15秒内答对且之前没答错过
+        
+        if(p.r <= 3 && !_isFast) {
+            // === 简化学习阶段: 答错/犹豫的卡片才需要 ===
+            // 间隔: 15min → 1h → 1d (仅2次同日回访，比原方案少一半)
+            var learnLevels = [0.25, 1, 24]; // 单位: 小时
+            var idx = Math.min(p.r - 1, learnLevels.length - 1);
+            var hours = learnLevels[idx];
+            if(hours < 1) {
+                p.n = Date.now() + hours * 3600000;
+                p.i = hours;
+            } else if(hours < 24) {
+                p.n = Date.now() + hours * 3600000;
+                p.i = hours;
+            } else {
+                p.n = Date.now() + 24 * 3600000;
+                p.i = 24;
+            }
+        } else if(_isFast && p.r <= 3) {
+            // === 快速正确: 跳过学习阶段，直接1天后复习 ===
+            p.r = 5; // 直接进入复习阶段
+            p.n = Date.now() + 86400000;
+            p.i = 24;
+        } else {
+            // === 复习阶段: SM-2 指数增长 ===
+            // interval = prev_interval × EF (以天为单位)
+            ef = Math.min(3.0, ef + 0.1); // 答对 EF 略增, 上限3.0
+            var prevDays = prevI > 0 ? prevI / 24 : 1;
+            if(p.r === 6) prevDays = 1; // 从学习阶段过渡到复习, 起始1天
+            var newDays = Math.min(365, Math.max(1, Math.round(prevDays * ef)));
+            p.i = newDays * 24; // 统一存储为小时
+            p.n = Date.now() + newDays * 86400000;
+        }
+        p.e = ef;
+        p.w = 0; // 答对重置连续答错计数
+        delete p.p42; // 清除42天推迟标记
         p.done = true;
         prog[curCard.i] = p;
     } else {
@@ -703,12 +798,31 @@ function submitAns() {
         document.getElementById("btn-easy").classList.remove("hide");
         document.getElementById("btn-42").classList.remove("hide");
         var p = prog[curCard.i] || {};
-        p.r = 0; p.i = 0; p.e = Math.max(1.3, (p.e||2.5) - 0.2);
-        p.n = Date.now() + 60000;
+        var ef = Math.max(1.3, (p.e||2.5) - 0.2); // 答错 EF 降低
+        var wrongCnt = (p.w || 0) + 1; // 累计连续答错次数
+        if(p.r <= 3) {
+            // 学习阶段答错: 递增惩罚 1min → 2min → 5min → 15min
+            var wrongIntervals = [1, 2, 5, 15]; // 分钟
+            var wIdx = Math.min(wrongCnt - 1, wrongIntervals.length - 1);
+            var delayMin = wrongIntervals[wIdx];
+            p.n = Date.now() + delayMin * 60000;
+            p.i = 0;
+            p.r = Math.max(0, (p.r||0) - 1); // 学习进度退一步
+        } else {
+            // 复习阶段答错: 退回到较短间隔, 保留部分记忆
+            var prevDays = p.i > 0 ? (p.i / 24) : 1;
+            var newDays = Math.max(1, Math.round(prevDays * 0.5)); // 间隔减半
+            p.i = newDays * 24;
+            p.n = Date.now() + 60000; // 1分钟后重试(本次会话内)
+            p.r = 5; // 不完全重置, 保持在复习阶段入口
+        }
+        p.e = ef;
+        p.w = wrongCnt;
         prog[curCard.i] = p;
     }
     saveProg();
     document.getElementById("today-cnt").textContent = "\u4eca\u65e5: "+sessStats.tot;
+    onStudyComplete(); // 更新连续打卡
 }
 function nextCard() { cardIdx++; showCard(); }
 
@@ -932,7 +1046,7 @@ function renderMods() {
             tc+=total; tl+=learned; tm+=mastered;
             var div = document.createElement("div");
             div.className = "mod-card" + (learned===total?" done":"");
-            div.innerHTML = '<div class="name">'+m.name+'</div><div class="count">'+learned+'/'+total+' ('+pct+'%)</div><div class="bar"><div class="fill" style="width:'+pct+'%"></div></div>';
+            div.innerHTML = '<div class="name">'+esc(m.name)+'</div><div class="count">'+learned+'/'+total+' ('+pct+'%)</div><div class="bar"><div class="fill" style="width:'+pct+'%"></div></div>';
             div.onclick = function() { showSecs(modIdx); };
             g.appendChild(div);
         })(mi);
@@ -969,7 +1083,7 @@ function showSecs(mi) {
             var div = document.createElement("div");
             div.className = "sec-item" + (learned===total?" done":"");
             var dn = s.name.length>55?s.name.substring(0,55)+"...":s.name;
-            div.innerHTML = '<div><div class="sn">'+dn+'</div><div class="sm">'+learned+'/'+total+' 已学 · '+mastered+' 已掌握</div><div class="sb"><div class="fill" style="width:'+pct+'%"></div></div></div><div><span class="badge bg-info">'+total+'</span></div>';
+            div.innerHTML = '<div><div class="sn">'+esc(dn)+'</div><div class="sm">'+learned+'/'+total+' 已学 · '+mastered+' 已掌握</div><div class="sb"><div class="fill" style="width:'+pct+'%"></div></div></div><div><span class="badge bg-info">'+total+'</span></div>';
             div.onclick = function() { startStudy(mi, idx); };
             list.appendChild(div);
         })(si);

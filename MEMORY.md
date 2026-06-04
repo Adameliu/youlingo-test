@@ -52,22 +52,37 @@ study_app.html 中 `langData` 变量加载
 
 ---
 
-## 🧠 间隔重复算法
+## 🧠 间隔重复算法（智能学习阶段）
 
 ```
-答对: 1h → 2h → 5h → 25h → 4d → 10d → 20d → 40d
-答错: 1 分钟后再现
-"太简单了": 标记已掌握 (m)
-"42天后再问": 延期 42 天
+【智能判断】答对且用时 < 15秒且之前没答错过？
+  ✅ 是 → 跳过学习阶段，直接1天后进入复习
+  ❌ 否 → 进入简化学习阶段
+
+【简化学习阶段】（r=1~3，犹豫/答错的卡片）
+  答对: 15min → 1h → 1d （仅2次同日回访）
+  答错: 递增惩罚 1min → 2min → 5min → 15min，学习进度退一步
+
+【复习阶段】（r>=4，SM-2 指数增长）
+  答对: interval = prev_interval × EF，EF 每次 +0.1（上限 3.0）
+  答错: interval = prev_interval × 0.5（间隔减半），EF -0.2（下限 1.3）
+  上限: 365天
+
+【特殊按钮】
+  "太简单了": EF=2.5, interval=90d, mastered=true
+  "42天后再问": interval=42d, EF不变
 ```
 
 进度数据结构 (`prog`):
 ```json
 {
   "{card_id}": {
-    "n": 0,      // 复习次数
-    "t": 123456, // 下次复习时间戳
-    "m": false,  // 是否已掌握 (mastered)
+    "r": 3,      // 答对次数 (r<=3:学习阶段, r>=4:复习阶段, r=5:快速正确跳过)
+    "n": 123456, // 下次复习时间戳 (毫秒)
+    "i": 2,      // 当前间隔 (学习阶段:小时, 复习阶段:小时=天×24)
+    "e": 2.5,    // SM-2 易度因子 (EF), 答对+0.1, 答错-0.2, 范围[1.3, 3.0]
+    "w": 0,      // 连续答错次数 (答对后归零, 用于递增惩罚)
+    "m": false,  // 是否已掌握 (mastered, "太简单了" 标记)
     "done": true // 本节已完成标记
   }
 }
@@ -145,6 +160,7 @@ interface Module {
 | **Storage Key (进度)** | `youlingo_progress_v2` |
 | **Storage Key (状态)** | `youlingo_state` |
 | **Storage Key (统计)** | `y_stats` |
+| **Storage Key (打卡)** | `y_streak` |
 | **Vercel** | 空配置 `{"version":2}`，自动部署 |
 
 ---
@@ -153,14 +169,13 @@ interface Module {
 
 | 文件 | 大小 | 说明 |
 |------|------|------|
-| `study_app.html` | ~300KB | 主应用（全部代码内联） |
-| `index.html` | — | Vercel 入口（同 study_app.html） |
-| `main.js` | — | 轻量加载 JS |
+| `index.html` | ~1160行 | 主应用（全部代码内联，唯一入口） |
+| `study_app.html` | — | 重定向到 index.html |
 | `service-worker.js` | — | PWA Service Worker |
 | `manifest.json` | — | PWA 配置 |
 | `vercel.json` | — | Vercel 部署配置 |
-| `study_data_compact.json` | ~30MB | 德语数据（编译后） |
-| `english_data.json` | ~37MB | 英语数据 |
+| `study_data_compact.json` | ~14MB | 德语数据（编译后） |
+| `english_data.json` | ~15MB | 英语数据 |
 | `modules/` | 24个 JSON | 德语原始模块卡片 |
 | `audio/` | 26,500+ 文件 | MP3 音频文件 |
 | `*.csv` | 2个 CSV | 原始卡片数据 |
