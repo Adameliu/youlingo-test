@@ -1056,29 +1056,42 @@ function renderMods() {
     updateReviewCount();
     updateTodayCnt();
     var g = document.getElementById("mod-grid"); g.innerHTML = "";
-    var tc=0, tl=0, tm=0;
+    var tc=0, tl=0, tm=0, twTotal=0, twMastered=0;
     for(var mi=0; mi<langData.length; mi++) {
         var m = langData[mi];
         var all = [];
         for(var si=0; si<m.sections.length; si++) all = all.concat(m.sections[si].cards);
         var total = all.length;
         var learned = 0, mastered = 0;
+        // 按 word._id 分组计算单词掌握度
+        var wordMap = {};
         for(var ci=0; ci<all.length; ci++) {
-            var p = prog[all[ci].i];
+            var c = all[ci];
+            var p = prog[c.i];
             if(p && (p.m || (p.r && p.r > 0))) learned++;
             if(p && p.m) mastered++;
+            var wid = (c.word && c.word._id) ? c.word._id.toString() : ('_noword_' + c.i);
+            if(!wordMap[wid]) wordMap[wid] = {total:0, mastered:0};
+            wordMap[wid].total++;
+            if(p && p.m) wordMap[wid].mastered++;
+        }
+        var wordKeys = Object.keys(wordMap);
+        var wTotal = wordKeys.length, wMastered = 0;
+        for(var wi=0; wi<wordKeys.length; wi++) {
+            if(wordMap[wordKeys[wi]].mastered === wordMap[wordKeys[wi]].total) wMastered++;
         }
         (function(modIdx) {
-            var pct = total ? Math.round(learned/total*100) : 0;
-            tc+=total; tl+=learned; tm+=mastered;
+            var pct = wTotal ? Math.round(wMastered/wTotal*100) : 0;
+            tc+=total; tl+=learned; tm+=mastered; twTotal+=wTotal; twMastered+=wMastered;
             var div = document.createElement("div");
-            div.className = "mod-card" + (learned===total?" done":"");
-            div.innerHTML = '<div class="name">'+esc(m.name)+'</div><div class="count">'+learned+'/'+total+' ('+pct+'%)</div><div class="bar"><div class="fill" style="width:'+pct+'%"></div></div>';
+            div.className = "mod-card" + (wMastered===wTotal && wTotal>0?" done":"");
+            div.innerHTML = '<div class="name">'+esc(m.name)+'</div><div class="count">词汇 '+wMastered+'/'+wTotal+' ('+pct+'%)</div><div class="bar"><div class="fill" style="width:'+pct+'%"></div></div>';
             div.onclick = function() { showSecs(modIdx); };
             g.appendChild(div);
         })(mi);
     }
-    document.getElementById("gstats").innerHTML = '<div class="stat"><div class="n">'+tl+'</div><div class="l">已学</div></div><div class="stat"><div class="n">'+tm+'</div><div class="l">已掌握</div></div><div class="stat"><div class="n">'+(tc?Math.round(tl/tc*100):0)+'%</div><div class="l">总进度</div></div><div class="stat"><div class="n">'+tc+'</div><div class="l">总卡片</div></div>';
+    var wpct = twTotal ? Math.round(twMastered/twTotal*100) : 0;
+    document.getElementById("gstats").innerHTML = '<div class="stat"><div class="n">'+twMastered+'/'+twTotal+'</div><div class="l">词汇掌握</div></div><div class="stat"><div class="n">'+tm+'</div><div class="l">已掌握</div></div><div class="stat"><div class="n">'+wpct+'%</div><div class="l">词汇进度</div></div><div class="stat"><div class="n">'+tc+'</div><div class="l">总卡片</div></div>';
 }
 
 function showSecs(mi) {
@@ -1087,30 +1100,50 @@ function showSecs(mi) {
     document.getElementById("scr-modules").classList.add("hide");
     document.getElementById("scr-sections").classList.remove("hide");
     document.getElementById("sec-mod-name").textContent = m.name;
+    // 模块级进度条：基于单词掌握度
     var all = [];
     for(var si=0; si<m.sections.length; si++) all = all.concat(m.sections[si].cards);
-    var learned = 0;
+    var wordMap = {};
     for(var ci=0; ci<all.length; ci++) {
-        var p = prog[all[ci].i];
-        if(p && (p.m || (p.r && p.r > 0))) learned++;
+        var c = all[ci];
+        var p = prog[c.i];
+        var wid = (c.word && c.word._id) ? c.word._id.toString() : ('_noword_' + c.i);
+        if(!wordMap[wid]) wordMap[wid] = {total:0, mastered:0};
+        wordMap[wid].total++;
+        if(p && p.m) wordMap[wid].mastered++;
     }
-    document.getElementById("mod-pfill").style.width = (all.length?Math.round(learned/all.length*100):0)+"%";
+    var wKeys = Object.keys(wordMap), wTotal = wKeys.length, wMastered = 0;
+    for(var wi=0; wi<wKeys.length; wi++) {
+        if(wordMap[wKeys[wi]].mastered === wordMap[wKeys[wi]].total) wMastered++;
+    }
+    document.getElementById("mod-pfill").style.width = (wTotal?Math.round(wMastered/wTotal*100):0)+"%";
     var list = document.getElementById("sec-list"); list.innerHTML = "";
     for(var si=0; si<m.sections.length; si++) {
         var s = m.sections[si];
         var total = s.cards.length;
         var learned = 0, mastered = 0;
+        // 小节级单词掌握度
+        var secWordMap = {};
         for(var ci=0; ci<s.cards.length; ci++) {
-            var p = prog[s.cards[ci].i];
+            var c = s.cards[ci];
+            var p = prog[c.i];
             if(p && (p.m || (p.r && p.r > 0))) learned++;
             if(p && p.m) mastered++;
+            var wid = (c.word && c.word._id) ? c.word._id.toString() : ('_noword_' + c.i);
+            if(!secWordMap[wid]) secWordMap[wid] = {total:0, mastered:0};
+            secWordMap[wid].total++;
+            if(p && p.m) secWordMap[wid].mastered++;
+        }
+        var swKeys = Object.keys(secWordMap), swTotal = swKeys.length, swMastered = 0;
+        for(var wi=0; wi<swKeys.length; wi++) {
+            if(secWordMap[swKeys[wi]].mastered === secWordMap[swKeys[wi]].total) swMastered++;
         }
         (function(idx) {
-            var pct = total ? Math.round(learned/total*100) : 0;
+            var pct = swTotal ? Math.round(swMastered/swTotal*100) : 0;
             var div = document.createElement("div");
-            div.className = "sec-item" + (learned===total?" done":"");
+            div.className = "sec-item" + (swMastered===swTotal && swTotal>0?" done":"");
             var dn = s.name.length>55?s.name.substring(0,55)+"...":s.name;
-            div.innerHTML = '<div><div class="sn">'+esc(dn)+'</div><div class="sm">'+learned+'/'+total+' 已学 · '+mastered+' 已掌握</div><div class="sb"><div class="fill" style="width:'+pct+'%"></div></div></div><div><span class="badge bg-info">'+total+'</span></div>';
+            div.innerHTML = '<div><div class="sn">'+esc(dn)+'</div><div class="sm">词汇 '+swMastered+'/'+swTotal+' · 卡片 '+learned+'/'+total+'</div><div class="sb"><div class="fill" style="width:'+pct+'%"></div></div></div><div><span class="badge bg-info">'+swTotal+'词</span></div>';
             div.onclick = function() { startStudy(mi, idx); };
             list.appendChild(div);
         })(si);
