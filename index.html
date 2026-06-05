@@ -158,7 +158,8 @@ window.onerror = function(msg, url, line) {
 };
 function showFatal(msg) {
     var el = document.getElementById('login-page') || document.getElementById('app') || document.body;
-    el.innerHTML = '<div class="alert alert-danger m-3" style="max-width:500px;margin:40px auto"><h5>✗ 加载失败</h5><p class="small">'+msg+'</p><button class="btn btn-sm btn-outline-secondary" onclick="location.reload()">刷新页面</button></div>';
+    var safeMsg = esc(msg || '未知错误');
+    el.innerHTML = '<div class="alert alert-danger m-3" style="max-width:500px;margin:40px auto"><h5>✗ 加载失败</h5><p class="small">'+safeMsg+'</p><button class="btn btn-sm btn-outline-secondary" onclick="location.reload()">刷新页面</button></div>';
 }
 
 const STORAGE_KEY = "youlingo_progress_v2";
@@ -167,6 +168,51 @@ const STORAGE_KEY = "youlingo_progress_v2";
 function esc(s) {
     if(!s) return '';
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+// Rich text sanitizer: strip dangerous HTML, keep safe formatting tags
+// Used for question text, options, and answers that legitimately contain <span style="color:red"> etc.
+function sanitizeHTML(html) {
+    if(!html) return '';
+    var tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    sanitizeNode(tmp);
+    return tmp.innerHTML;
+}
+function sanitizeNode(node) {
+    var ALLOWED_TAGS = {'SPAN':1,'B':1,'I':1,'U':1,'EM':1,'STRONG':1,'BR':1,'SUB':1,'SUP':1};
+    var ALLOWED_STYLE = /color|font-weight|font-style|text-decoration|background-color/;
+    var children = Array.prototype.slice.call(node.childNodes);
+    for(var i=0; i<children.length; i++) {
+        var child = children[i];
+        if(child.nodeType === 3) continue; // text node, safe
+        if(child.nodeType !== 1) { node.removeChild(child); continue; } // remove non-element nodes
+        // Remove disallowed tags but keep their children
+        if(!ALLOWED_TAGS[child.tagName]) {
+            while(child.firstChild) node.insertBefore(child.firstChild, child);
+            node.removeChild(child);
+            continue;
+        }
+        // Strip all attributes except safe style
+        var attrs = Array.prototype.slice.call(child.attributes);
+        for(var a=0; a<attrs.length; a++) {
+            var attr = attrs[a];
+            if(attr.name === 'style') {
+                // Filter style to only allow safe properties
+                var safeStyles = [];
+                var parts = attr.value.split(';');
+                for(var s=0; s<parts.length; s++) {
+                    var prop = parts[s].split(':')[0].trim().toLowerCase();
+                    if(ALLOWED_STYLE.test(prop)) safeStyles.push(parts[s]);
+                }
+                if(safeStyles.length) child.setAttribute('style', safeStyles.join(';'));
+                else child.removeAttribute('style');
+            } else if(attr.name !== 'class') {
+                child.removeAttribute(attr.name);
+            }
+        }
+        // Recursively sanitize children
+        sanitizeNode(child);
+    }
 }
 
 var curModIdx = -1, curSecIdx = -1;
@@ -646,7 +692,7 @@ function showCard() {
                 radio.style.cssText = "width:18px;height:18px;margin-right:12px;cursor:pointer;accent-color:#17a2b8;flex-shrink:0";
                 var label = document.createElement("span");
                 label.style.cssText = "font-size:.95rem;cursor:pointer;flex:1";
-                label.innerHTML = opt;
+                label.innerHTML = sanitizeHTML(opt);
                 div.appendChild(radio); div.appendChild(label);
                 div.onclick = function() {
                     document.querySelectorAll("#opts-area > div").forEach(function(d){
@@ -740,7 +786,7 @@ function submitAns() {
         fb.className = "fb " + (correct?"ok":"no");
         var hint = "";
         if(!correct && ua.toLowerCase() === curCard.a.toLowerCase()) hint = " (\u6ce8\u610f\u5927\u5c0f\u5199)";
-        fb.innerHTML = correct ? "\u2713 \u7b54\u5bf9\u4e86\uff01\u6b63\u786e\u7b54\u6848\uff1a"+curCard.a : "\u2717 \u6b63\u786e\u7b54\u6848\uff1a"+curCard.a+hint;
+        fb.innerHTML = correct ? "\u2713 \u7b54\u5bf9\u4e86\uff01\u6b63\u786e\u7b54\u6848\uff1a"+sanitizeHTML(curCard.a) : "\u2717 \u6b63\u786e\u7b54\u6848\uff1a"+sanitizeHTML(curCard.a)+hint;
         inp.className = "form-control inp " + (correct?"ok":"no");
     }
     
@@ -1011,7 +1057,7 @@ function switchLang(lang) {
 
 function renderQ(html) {
     var area = document.getElementById("qarea");
-    area.innerHTML = html;
+    area.innerHTML = sanitizeHTML(html);
     area.querySelectorAll("audio, source, #audio-div, [id^=audio-]").forEach(function(el) {
         if(el.tagName != "SPAN") el.remove();
     });
@@ -1163,7 +1209,7 @@ document.getElementById("btn-submit").onclick = submitAns;
 document.getElementById("btn-show").onclick = function() {
     if(!curCard) return;
     var fb = document.getElementById("fb");
-    fb.className = "fb no"; fb.innerHTML = "正确答案："+curCard.a;
+    fb.className = "fb no"; fb.innerHTML = "正确答案："+sanitizeHTML(curCard.a);
     document.getElementById("btn-show").classList.add("hide");
 };
 document.getElementById("btn-next").onclick = nextCard;
