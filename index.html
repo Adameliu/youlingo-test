@@ -35,7 +35,7 @@ body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI
 .mod-card:hover{border-color:var(--primary);box-shadow:var(--card-hover);transform:translateY(-2px)}
 .mod-card:active{transform:scale(0.97)}
 .mod-card.done{opacity:.6}
-.mod-card.done .name::after{content:'¹3 ';color:var(--success);font-weight:700}
+.mod-card.done .name::after{content:' ✓';color:var(--success);font-weight:700}
 .mod-card .name{font-weight:600;font-size:.85rem}
 .mod-card .count{font-size:.72rem;color:#999;margin-top:3px}
 .mod-card .bar{height:4px;background:#e9ecef;border-radius:2px;margin-top:8px;overflow:hidden}
@@ -61,11 +61,11 @@ body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI
 .opt-btn.wrong{border-color:var(--danger);background:#f8d7da;color:#721c24;animation:shake .4s ease}
 .inp{font-size:1.05rem;text-align:center;padding:14px;border-radius:10px;border:2px solid #e2e8f0;transition:all .2s ease}
 .inp:focus{border-color:var(--primary);box-shadow:0 0 0 .2rem rgba(23,162,184,0.15)}
-.inp.ok{border-color:var(--success);background:var(--success-light);animation:popIn .3s ease}
-.inp.no{border-color:var(--danger);background:#f8d7da;animation:shake .4s ease}
+.inp.ok{border-color:#28a745;background:#d4edda;animation:popIn .3s ease}
+.inp.no{border-color:#dc3545;background:#f8d7da;animation:shake .4s ease}
 .fb{padding:14px;border-radius:12px;margin-top:12px;font-size:.9rem;animation:fadeIn .3s ease}
-.fb.ok{background:linear-gradient(135deg,#d4edda,#c3e6cb);color:#155724;border:1px solid #b1dfbb}
-.fb.no{background:linear-gradient(135deg,#f8d7da,#f5c6cb);color:#721c24;border:1px solid #f1b0b7}
+.fb.ok{background:#d4edda;color:#155724;border:1px solid #a3cfbb}
+.fb.no{background:#f8d7da;color:#721c24;border:1px solid #e9aeb5}
 .pbar{height:6px;background:#e9ecef;border-radius:3px;overflow:hidden;margin-bottom:10px}
 .pbar .fill{height:100%;background:linear-gradient(90deg,var(--primary),#20c997);border-radius:3px;transition:width .4s cubic-bezier(.4,0,.2,1)}
 .pinfo{display:flex;justify-content:space-between;font-size:.8rem;color:#999;margin-bottom:8px}
