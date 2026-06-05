@@ -1137,7 +1137,8 @@ function renderMods() {
         })(mi);
     }
     var wpct = twTotal ? Math.round(twMastered/twTotal*100) : 0;
-    document.getElementById("gstats").innerHTML = '<div class="stat"><div class="n">'+twMastered+'/'+twTotal+'</div><div class="l">词汇掌握</div></div><div class="stat"><div class="n">'+tm+'</div><div class="l">已掌握</div></div><div class="stat"><div class="n">'+wpct+'%</div><div class="l">词汇进度</div></div><div class="stat"><div class="n">'+tc+'</div><div class="l">总卡片</div></div>';
+    var cpct = tc ? Math.round(tl/tc*100) : 0;
+    document.getElementById("gstats").innerHTML = '<div class="stat"><div class="n">'+tl+'/'+tc+'</div><div class="l">已学</div></div><div class="stat"><div class="n">'+tm+'</div><div class="l">已掌握</div></div><div class="stat"><div class="n">'+cpct+'%</div><div class="l">总进度</div></div>';
 }
 
 function showSecs(mi) {
