@@ -66,7 +66,7 @@ body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,
 .card-box{background:#fff;border-radius:18px;box-shadow:var(--card-shadow);padding:25px;margin-top:15px;min-height:260px;transition:all .3s ease}
 .q-text{font-size:1.05rem;line-height:1.7;margin-bottom:15px}
 .q-text .audio-btn{display:inline-block;width:32px;cursor:pointer;vertical-align:middle}
-.opts-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.opts-grid{display:flex;flex-direction:column;gap:8px}
 .opt-btn{font-size:.95rem;padding:12px 16px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;cursor:pointer;transition:all .15s ease;text-align:left;position:relative;overflow:hidden}
 .opt-btn:hover{border-color:var(--primary);background:var(--primary-light);box-shadow:0 2px 8px rgba(23,162,184,0.12)}
 .opt-btn:active{transform:scale(0.97)}
@@ -111,7 +111,7 @@ body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,
 .streak-celebrate .msg{font-size:.9rem;color:#666;margin-top:8px}
 .confetti{position:fixed;top:-10px;z-index:10001;pointer-events:none;animation:confettiFall linear forwards}
 @keyframes confettiFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
-@media(max-width:600px){.grid-3{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}.card-box{padding:18px 14px;border-radius:14px}.opts-grid{grid-template-columns:1fr}.mod-card{padding:12px 8px}.opt-btn{padding:14px;font-size:1rem;min-height:48px}.inp{padding:14px;font-size:1.1rem;min-height:48px}.btn{min-height:44px}.stat .n{font-size:1.3rem}}
+@media(max-width:600px){.grid-3{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}.card-box{padding:18px 14px;border-radius:14px}.mod-card{padding:12px 8px}.opt-btn{padding:14px;font-size:1rem;min-height:48px}.inp{padding:14px;font-size:1.1rem;min-height:48px}.btn{min-height:44px}.stat .n{font-size:1.3rem}}
 
 </style>
 </head>
@@ -755,9 +755,9 @@ function showCard() {
                 div.onclick = function() {
                     document.querySelectorAll("#opts-area .opt-btn").forEach(function(d){
                         d.classList.remove("sel"); d.style.borderColor=""; d.style.background="";
+                        var r=d.querySelector("input[type=radio]");if(r)r.checked=false;
                     });
                     this.classList.add("sel");
-                    
                     this.querySelector("input[type=radio]").checked = true;
                     var txt = document.createElement("div");
                     txt.innerHTML = this.querySelector("span").innerHTML;
@@ -1324,7 +1324,7 @@ document.addEventListener("keydown", function(e) {
         var oa = document.getElementById("opts-area");
         if(oa && !oa.classList.contains("hide")) {
             var idx = parseInt(e.key) - 1;
-            var opts = oa.querySelectorAll("div");
+            var opts = oa.querySelectorAll(".opt-btn");
             if(opts[idx]) opts[idx].click();
         }
     }
