@@ -759,9 +759,8 @@ function showCard() {
                     });
                     this.classList.add("sel");
                     this.querySelector("input[type=radio]").checked = true;
-                    var txt = document.createElement("div");
-                    txt.innerHTML = this.querySelector("span").innerHTML;
-                    inp.value = txt.textContent.trim();
+                    var lbl=this.querySelector("span:not(.key-hint)");
+                    inp.value=lbl?lbl.textContent.trim():"";
                 };
                 optsWrap.appendChild(div);
             })(curCard.opts[oi],oi);
