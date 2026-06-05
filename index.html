@@ -614,7 +614,7 @@ function checkAns(ua, ca) {
 
 // ===== Study =====
 function startStudy(mi, si) {
-    if(!langData || !langData[mi] || !langData[mi].sections[si]) return;
+    if(!langData || !langData.length || mi<0 || si<0 || !langData[mi] || !langData[mi].sections || !langData[mi].sections[si]) return;
     curModIdx = mi;
     curSecIdx = si;
     saveState();
@@ -733,7 +733,7 @@ function showCard() {
     }
 
     // Options area - radio buttons for choice cards
-    var oa = document.getElementById("opts-area"); oa.innerHTML = "";
+    var oa = document.getElementById("opts-area"); oa.innerHTML = ""; oa.classList.remove("hide");
     var inp = document.getElementById("ans-inp");
     if(curCard.opts && curCard.opts.length) {
         oa.classList.remove("hide");
@@ -753,8 +753,8 @@ function showCard() {
                 label.innerHTML = sanitizeHTML(opt);
                 var kh=document.createElement("span");kh.className="key-hint";kh.textContent=(oi2+1);div.appendChild(kh);div.appendChild(radio);div.appendChild(label);
                 div.onclick = function() {
-                    document.querySelectorAll("#opts-area > div").forEach(function(d){
-                        d.classList.remove("sel"); d.style.borderColor="#dee2e6"; d.style.background="#fff";
+                    document.querySelectorAll("#opts-area .opt-btn").forEach(function(d){
+                        d.classList.remove("sel"); d.style.borderColor=""; d.style.background="";
                     });
                     this.classList.add("sel");
                     
@@ -1297,8 +1297,9 @@ document.getElementById("btn-done").onclick = function() {
 document.getElementById("btn-next-sec").onclick = function() {
     document.getElementById("scr-study").classList.add("hide");
     // Find next section with un-mastered cards
-    for(var mi=curModIdx; mi<langData.length; mi++) {
-        for(var si=(mi===curModIdx?curSecIdx+1:0); si<langData[mi].sections.length; si++) {
+    if(!langData || !langData.length) { goHome(); return; }
+    for(var mi=Math.max(0,curModIdx); mi<langData.length; mi++) {
+        for(var si=(mi===curModIdx?curSecIdx+1:0); langData[mi]&&si<langData[mi].sections.length; si++) {
             var sec = langData[mi].sections[si];
             for(var ci=0; ci<sec.cards.length; ci++) {
                 var p = prog[sec.cards[ci].i];
