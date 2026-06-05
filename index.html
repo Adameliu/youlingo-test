@@ -604,7 +604,7 @@ function startStudy(mi, si) {
         }
         saveProg();
     }
-    var typeOrder = TYPE_ORDER;
+    var typeOrder = ["dictation","dictationChinese","meaningChinese","word","multi","gender","plural","feminine","pastParticiple","isSeparable","presentTenseConjugation","pastTenseConjugation","konjunktivII","imperativ","comparativ","superlativ","phrase","custom","array","一般"];
     // 词组式出题：按类型分组 → 同类型内按 word._id 聚合 → 词组间随机
     var groups = {};
     for(var ci=0; ci<available.length; ci++) {
