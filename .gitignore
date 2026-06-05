@@ -14,3 +14,4 @@ Thumbs.db
 tmp_*.js
 sharplingo_monitor.js
 .codegraph/
+.reasonix/
