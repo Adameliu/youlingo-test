@@ -752,7 +752,8 @@ function showCard() {
         }
     }
 
-    document.getElementById("fb").className = "fb hide";
+    if(!(_p42check && _p42check.p42)) document.getElementById("fb").className = "fb hide";
+    document.getElementById("btn-submit").disabled=false;
     document.getElementById("btn-submit").classList.remove("hide");
     document.getElementById("btn-show").classList.add("hide");
     document.getElementById("btn-next").classList.add("hide");
@@ -786,6 +787,9 @@ function showHooray() {
 
 function submitAns() {
     if(!curCard) return;
+    var _subBtn=document.getElementById("btn-submit");
+    if(_subBtn.disabled) return;
+    _subBtn.disabled=true;
     var isMulti = curCard.fields && curCard.fields.length > 1;
     var inp = document.getElementById("ans-inp"), fb = document.getElementById("fb");
     
@@ -802,7 +806,7 @@ function submitAns() {
             if(!fi_inp) continue;
             var ua = fi_inp.value.trim();
             var fa = curCard.fa && curCard.fa[fi] ? curCard.fa[fi] : "";
-            var fieldCorrect = fa ? checkAns(ua, fa) : true;
+            var fieldCorrect = (fa && ua) ? checkAns(ua, fa) : false;
             if(!fieldCorrect) allCorrect = false;
             fi_inp.className = "form-control inp";
             fi_inp.style.borderColor = fieldCorrect ? "#28a745" : "#dc3545";
@@ -879,8 +883,7 @@ function submitAns() {
             // interval = prev_interval × EF (以天为单位)
             ef = Math.min(3.0, ef + 0.1); // 答对 EF 略增, 上限3.0
             var prevDays = prevI > 0 ? prevI / 24 : 1;
-            if(p.r === 6) prevDays = 1; // 从学习阶段过渡到复习, 起始1天
-            var newDays = Math.min(365, Math.max(1, Math.round(prevDays * ef)));
+                        var newDays = Math.min(365, Math.max(1, Math.round(prevDays * ef)));
             p.i = newDays * 24; // 统一存储为小时
             p.n = Date.now() + newDays * 86400000;
         }
@@ -890,7 +893,7 @@ function submitAns() {
         p.done = true;
         prog[curCard.i] = p;
     } else {
-        if(!correct) { inp.disabled = false; inp.focus(); }
+        if(!correct) { inp.disabled = false; inp.value = ""; inp.focus(); document.getElementById("btn-submit").disabled=false; }
         document.getElementById("btn-submit").classList.remove("hide");
         document.getElementById("btn-show").classList.remove("hide");
         document.getElementById("btn-next").classList.add("hide");
