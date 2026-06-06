@@ -74,6 +74,9 @@ body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI
 .tbadge{display:inline-block;background:#e8f4fd;color:#0c5460;padding:3px 10px;border-radius:10px;font-size:.72rem;font-weight:500}
 .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#dc3545;color:#fff;padding:12px 24px;border-radius:10px;font-size:.85rem;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;max-width:90vw;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.15)}
 .toast.show{opacity:1}
+.shortcut-hint{text-align:center;margin-top:10px;padding:6px 12px;background:#f8f9fa;border-radius:8px;font-size:.72rem;color:#999;letter-spacing:.3px;line-height:1.6;user-select:none;transition:opacity .2s}
+.shortcut-hint:empty{display:none}
+.shortcut-hint kbd{display:inline-block;padding:1px 5px;font-size:.65rem;font-family:inherit;color:#555;background:#fff;border:1px solid #d0d0d0;border-radius:4px;box-shadow:0 1px 0 #bbb;margin:0 1px;vertical-align:middle;line-height:1.4}
 @media(max-width:600px){.grid-3{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}.card-box{padding:18px 14px;border-radius:14px}.opt-btn{padding:14px;font-size:1rem;min-height:48px}.inp{padding:14px;font-size:1.1rem;min-height:48px}.btn{min-height:44px}.stat .n{font-size:1.3rem}}
 </style>
 </head>
@@ -151,6 +154,7 @@ body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI
 <button class="btn btn-sm btn-warning hide" id="btn-easy">太简单了</button>
 <button class="btn btn-sm btn-info hide" id="btn-42" title="42 天后再见面">42天后再问我</button>
 </div>
+<div class="shortcut-hint" id="shortcut-hint"></div>
 <div class="hooray hide fade-in" id="hooray">
 <i class="far fa-check-circle"></i>
 <h5 class="mt-2">本节已完成！</h5>
@@ -634,6 +638,26 @@ function startStudy(mi, si) {
     showCard();
 }
 
+function updateShortcutHint(state) {
+    var el = document.getElementById("shortcut-hint");
+    if(!el) return;
+    var isChoice = curCard && curCard.opts && curCard.opts.length > 0;
+    var html = "";
+    if(state === "answer") {
+        // 等待答题
+        if(isChoice) html = "<kbd>1</kbd>-<kbd>4</kbd> 选择  <kbd>Enter</kbd> 提交";
+        else html = "<kbd>Enter</kbd> 提交答案";
+    } else if(state === "correct") {
+        // 答对了
+        html = "<kbd>Space</kbd> 下一题  <kbd>E</kbd> 太简单  <kbd>D</kbd> 推迟";
+    } else if(state === "wrong") {
+        // 答错了
+        html = "<kbd>Enter</kbd> 重试";
+    } else {
+        html = "";
+    }
+    el.innerHTML = html;
+}
 function showCard() {
     _cardShownAt = Date.now(); // 记录卡片显示时间
     saveState();
@@ -735,6 +759,7 @@ function showCard() {
     document.getElementById("btn-easy").classList.add("hide");
     document.getElementById("btn-42").classList.add("hide");
     document.getElementById("hooray").classList.add("hide");
+    updateShortcutHint("answer");
     
     if(curCard.au) {
         play(curCard.au);
@@ -754,6 +779,7 @@ function showHooray() {
     ["btn-show","btn-next","btn-easy","btn-42"].forEach(function(id){ document.getElementById(id).classList.add("hide"); });
     document.getElementById("fb").classList.add("hide");
     document.getElementById("hooray").classList.remove("hide");
+    document.getElementById("shortcut-hint").innerHTML = "";
     document.getElementById("ptext").textContent = "全部完成！";
     document.getElementById("spfill").style.width = "100%";
 }
@@ -819,6 +845,7 @@ function submitAns() {
         document.getElementById("btn-next").classList.remove("hide");
         document.getElementById("btn-easy").classList.remove("hide");
         document.getElementById("btn-42").classList.remove("hide");
+        updateShortcutHint("correct");
         var p = prog[curCard.i] || {};
         p.r = (p.r||0) + 1;
         var ef = p.e || 2.5;
@@ -869,6 +896,7 @@ function submitAns() {
         document.getElementById("btn-next").classList.add("hide");
         document.getElementById("btn-easy").classList.add("hide");
         document.getElementById("btn-42").classList.add("hide");
+        updateShortcutHint("wrong");
         var p = prog[curCard.i] || {};
         var ef = Math.max(1.3, (p.e||2.5) - 0.2); // 答错 EF 降低
         var wrongCnt = (p.w || 0) + 1; // 累计连续答错次数
