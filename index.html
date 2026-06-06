@@ -893,7 +893,7 @@ function submitAns() {
         prog[curCard.i] = p;
     }
     saveProg();
-    document.getElementById("today-cnt").textContent = "\u4eca\u65e5: "+sessStats.tot;
+    document.getElementById("today-cnt").textContent="今日: "+(function(){try{var s=JSON.parse(localStorage.getItem("y_stats")||"{}");var t=new Date(),k=t.getFullYear()+"-"+(t.getMonth()+1)+"-"+(t.getDate());return Math.max(sessStats.tot,s.d===k?(s.n||0):0);}catch(e){return sessStats.tot;}})();
     onStudyComplete(); // 更新连续打卡
 }
 function nextCard() { cardIdx++; showCard(); }
@@ -913,7 +913,7 @@ function mark42() {
 }
 
 var _studySkipTo = null;
-function startStudyAll() {
+var _studyDepth=0;function startStudyAll() {if(++_studyDepth>50){alert("全部学习完成！");_studySkipTo=null;_studyDepth=0;goHome();return;}
     // Find current learning position: first module+section with un-mastered cards
     var now = Date.now();
     var curMi = -1, curSi = -1;
@@ -1065,7 +1065,7 @@ function switchLang(lang) {
         document.getElementById("lang-desc").textContent = info.flag + " " + info.name + " · " + langData.length + " 个模块";
         renderMods();
     }).catch(function(e) {
-        document.getElementById("mod-grid").innerHTML = "<div class='alert alert-danger'>加载失败: " + e.message + "</div>";
+        document.getElementById("mod-grid").innerHTML = "<div class='alert alert-danger'>加载失败: " + esc(e.message) + "</div>";
     });
 }
 
@@ -1085,7 +1085,7 @@ function renderQ(html) {
         if(firstText && firstText.nodeType === 3) {
             firstText.parentNode.insertBefore(sp, firstText.nextSibling);
         } else {
-            area.insertBefore(sp, area.firstChild.nextSibling);
+            if(area.firstChild){area.insertBefore(sp, area.firstChild.nextSibling);}else{area.appendChild(sp);}
         }
     }
 }
@@ -1280,14 +1280,14 @@ document.addEventListener("keydown", function(e) {
         }
     }
     // 空格键：下一题
-    if(e.key === " " && !document.getElementById("btn-next").classList.contains("hide")) {
+    if(e.key === " " && !document.getElementById("btn-next").classList.contains("hide") && (!document.activeElement || document.activeElement.tagName !== "INPUT")) {
         e.preventDefault();
         nextCard();
     }
 });
 
 // Init
-document.getElementById("btn-start-study").onclick = startStudyAll;
+document.getElementById("btn-start-study").onclick = function(){_studyDepth=0;startStudyAll();};
 switchLang("german");</script>
 <div style="text-align:center;font-size:.7rem;color:#aaa;padding:10px 0">© 2026 Michael.Liu</div>
 </body>
