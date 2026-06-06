@@ -21,6 +21,7 @@ body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI
 @keyframes loadSlide{0%{transform:translateX(-100%)}100%{transform:translateX(400%)}}
 .fade-in{animation:fadeIn .3s ease}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.page-in{animation:fadeIn .25s ease}
 @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
 @keyframes popIn{0%{transform:scale(0.9);opacity:0}100%{transform:scale(1);opacity:1}}
 .mod-card{background:#fff;border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,0.06);border:2px solid transparent;transition:all .2s ease}
@@ -158,6 +159,7 @@ body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI
 <div class="hooray hide fade-in" id="hooray">
 <i class="far fa-check-circle"></i>
 <h5 class="mt-2">本节已完成！</h5>
+<p id="hooray-stats" style="color:#666;font-size:.9rem;margin-top:8px"></p>
 <button class="btn btn-primary mt-2" id="btn-done">返回小节</button>
 <button class="btn btn-success mt-2 ms-2" id="btn-next-sec">下一节 →</button>
 </div>
@@ -582,7 +584,7 @@ function startStudy(mi, si) {
     var sec = langData[mi].sections[si];
     document.getElementById("scr-modules").classList.add("hide");
     document.getElementById("scr-sections").classList.add("hide");
-    document.getElementById("scr-study").classList.remove("hide");
+    var _st=document.getElementById("scr-study");_st.classList.remove("hide");_st.classList.remove("page-in");void _st.offsetWidth;_st.classList.add("page-in");
     document.getElementById("study-sec-name").textContent = sec.name.substring(0,45);
     var available = [];
     for(var ci=0; ci<sec.cards.length; ci++) {
@@ -783,6 +785,11 @@ function showHooray() {
     document.getElementById("shortcut-hint").innerHTML = "";
     document.getElementById("ptext").textContent = "全部完成！";
     document.getElementById("spfill").style.width = "100%";
+    var _hs=document.getElementById("hooray-stats");
+    if(_hs && sessStats.tot>0){
+        var _rate=sessStats.tot>0?Math.round(sessStats.ok/sessStats.tot*100):0;
+        _hs.innerHTML="答对 "+sessStats.ok+"/"+sessStats.tot+" · 正确率 "+_rate+"%";
+    }
 }
 
 function submitAns() {
@@ -1083,6 +1090,7 @@ var langInfo = {"german": {"name": "Deutsch", "flag": "🇩🇪"}, "english": {"
 
 function switchLang(lang) {
     var currentLang = lang;
+    try{localStorage.setItem("y_lang",lang);}catch(e){}
     document.getElementById("btn-lang-de").className = lang==="german" ? "btn btn-lg btn-primary" : "btn btn-lg btn-outline-secondary";
     document.getElementById("btn-lang-en").className = lang==="english" ? "btn btn-lg btn-primary" : "btn btn-lg btn-outline-secondary";
     var info = langInfo[lang];
@@ -1108,8 +1116,8 @@ function renderQ(html) {
     });
     if(curCard && curCard.au) {
         var sp = document.createElement("span");
-        sp.style.cssText = "display:inline-block;width:28px;height:28px;cursor:pointer;vertical-align:middle;margin-left:4px";
-        sp.innerHTML = '<svg viewBox="0 0 24 24" width="28" height="28"><path fill="#17a2b8" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>';
+        sp.style.cssText = "display:inline-block;width:36px;height:36px;cursor:pointer;vertical-align:middle;margin-left:4px";
+        sp.innerHTML = '<svg viewBox="0 0 24 24" width="36" height="36"><path fill="#17a2b8" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>';
         sp.title = "点击重播";
         sp.onclick = function() { play(curCard.au); };
         var firstText = area.firstChild;
@@ -1190,7 +1198,7 @@ function showSecs(mi) {
     curModIdx = mi;
     var m = langData[mi];
     document.getElementById("scr-modules").classList.add("hide");
-    document.getElementById("scr-sections").classList.remove("hide");
+    var _ss=document.getElementById("scr-sections");_ss.classList.remove("hide");_ss.classList.remove("page-in");void _ss.offsetWidth;_ss.classList.add("page-in");
     document.getElementById("sec-mod-name").textContent = m.name;
     // 模块级进度条：基于单词掌握度
     var all = [];
@@ -1246,7 +1254,7 @@ function goHome() {
     clearState();
     document.getElementById("scr-sections").classList.add("hide");
     document.getElementById("scr-study").classList.add("hide");
-    document.getElementById("scr-modules").classList.remove("hide");
+    var _sm=document.getElementById("scr-modules");_sm.classList.remove("hide");_sm.classList.remove("page-in");void _sm.offsetWidth;_sm.classList.add("page-in");
     renderMods();
 }
 
@@ -1263,7 +1271,7 @@ document.getElementById("btn-easy").onclick = markEasy;
 document.getElementById("btn-42").onclick = mark42;
 document.getElementById("back-mod2").onclick = function() {
     document.getElementById("scr-sections").classList.add("hide");
-    document.getElementById("scr-modules").classList.remove("hide");
+    var _sm2=document.getElementById("scr-modules");_sm2.classList.remove("hide");_sm2.classList.remove("page-in");void _sm2.offsetWidth;_sm2.classList.add("page-in");
     renderMods();
 };
 document.getElementById("back-sec").onclick = function() {
@@ -1329,7 +1337,7 @@ document.addEventListener("keydown", function(e) {
 
 // Init
 document.getElementById("btn-start-study").onclick = function(){_studyDepth=0;startStudyAll();};
-switchLang("german");</script>
+switchLang(localStorage.getItem("y_lang")||"german");</script>
 <div style="text-align:center;font-size:.7rem;color:#aaa;padding:10px 0">© 2026 Michael.Liu</div>
 </body>
 </html>
