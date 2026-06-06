@@ -1279,6 +1279,16 @@ document.addEventListener("keydown", function(e) {
             if(opts[idx]) opts[idx].click();
         }
     }
+    // E键：太简单了
+    if((e.key==="e"||e.key==="E") && !document.getElementById("btn-easy").classList.contains("hide")) {
+        e.preventDefault();
+        markEasy();
+    }
+    // D键：42天后再问我
+    if((e.key==="d"||e.key==="D") && !document.getElementById("btn-42").classList.contains("hide")) {
+        e.preventDefault();
+        mark42();
+    }
     // 空格键：下一题
     if(e.key === " " && !document.getElementById("btn-next").classList.contains("hide") && (!document.activeElement || document.activeElement.tagName !== "INPUT")) {
         e.preventDefault();
