@@ -838,6 +838,7 @@ function submitAns() {
         var hint = "";
         if(!correct && ua.toLowerCase() === curCard.a.toLowerCase()) hint = " (\u6ce8\u610f\u5927\u5c0f\u5199)";
         fb.innerHTML = correct ? "✓ 答对了！正确答案："+sanitizeHTML(curCard.a) : "✗ 正确答案："+sanitizeHTML(curCard.a)+"\n    你的答案："+sanitizeHTML(ua)+hint;
+        fb.style.whiteSpace = "pre-line";
         inp.className = "form-control inp " + (correct?"ok":"no");
     }
     
