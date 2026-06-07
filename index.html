@@ -1360,11 +1360,6 @@ document.addEventListener("keydown", function(e) {
         e.preventDefault();
         mark42();
     }
-    // M键：手抖了(Misclick)
-    if((e.key==="m"||e.key==="M") && !document.getElementById("btn-misclick").classList.contains("hide") && (!document.activeElement || document.activeElement.tagName !== "INPUT")) {
-        e.preventDefault();
-        markMisclick();
-    }
     // 空格键：下一题
     if(e.key === " " && !document.getElementById("btn-next").classList.contains("hide") && (!document.activeElement || document.activeElement.tagName !== "INPUT")) {
         e.preventDefault();
