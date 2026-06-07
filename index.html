@@ -79,9 +79,6 @@ body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI
 .toast.show{opacity:1}
 .shortcut-hint{text-align:center;margin-top:10px;padding:6px 12px;background:#f8f9fa;border-radius:8px;font-size:.72rem;color:#999;letter-spacing:.3px;line-height:1.6;user-select:none;transition:opacity .2s}
 .shortcut-hint:empty{display:none}
-#rating-btns .btn{font-size:.8rem;padding:6px 4px;border-radius:8px;transition:all .12s}
-#rating-btns .btn:hover{opacity:.85;transform:scale(1.03)}
-#rating-btns .btn:active{transform:scale(0.97)}
 .shortcut-hint kbd{display:inline-block;padding:1px 5px;font-size:.65rem;font-family:inherit;color:#555;background:#fff;border:1px solid #d0d0d0;border-radius:4px;box-shadow:0 1px 0 #bbb;margin:0 1px;vertical-align:middle;line-height:1.4}
 @media(max-width:600px){.grid-3{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}.card-box{padding:18px 14px;border-radius:14px}.opt-btn{padding:14px;font-size:1rem;min-height:48px}.inp{padding:14px;font-size:1.1rem;min-height:48px}.btn{min-height:44px}.stat .n{font-size:1.3rem}}
 </style>
@@ -156,12 +153,9 @@ body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI
 <div class="acts">
 <button class="btn btn-primary" id="btn-submit">提交</button>
 <button class="btn btn-sm btn-secondary hide" id="btn-show">显示答案</button>
-<div id="rating-btns" class="hide" style="display:none;gap:6px;flex-wrap:wrap;margin-top:8px">
-<button class="btn btn-sm" id="btn-again" style="background:#dc3545;color:#fff;border:none;flex:1;min-width:60px">重来</button>
-<button class="btn btn-sm" id="btn-hard" style="background:#fd7e14;color:#fff;border:none;flex:1;min-width:60px">困难</button>
-<button class="btn btn-sm" id="btn-good" style="background:#28a745;color:#fff;border:none;flex:1;min-width:60px">良好</button>
-<button class="btn btn-sm" id="btn-easy" style="background:#17a2b8;color:#fff;border:none;flex:1;min-width:60px">简单</button>
-</div>
+<button class="btn btn-sm btn-success hide" id="btn-next">下一题</button>
+<button class="btn btn-sm btn-warning hide" id="btn-easy">太简单了</button>
+<button class="btn btn-sm btn-info hide" id="btn-42" title="42 天后再见面">42天后再问我</button>
 </div>
 <div class="shortcut-hint" id="shortcut-hint"></div>
 <div class="hooray hide fade-in" id="hooray">
@@ -657,8 +651,9 @@ function updateShortcutHint(state) {
         // 等待答题
         if(isChoice) html = "<kbd>1</kbd>-<kbd>4</kbd> 选择  <kbd>Enter</kbd> 提交";
         else html = "<kbd>Enter</kbd> 提交答案";
-    } else if(state === "fsrs") {
-        html = "<kbd>E</kbd> 重来 <kbd>D</kbd> 困难 <kbd>F</kbd> 良好 <kbd>G</kbd> 简单";
+    } else if(state === "correct") {
+        // 答对了
+        html = "<kbd>Space</kbd> 下一题  <kbd>E</kbd> 太简单  <kbd>D</kbd> 推迟";
     } else if(state === "wrong") {
         // 答错了
         html = "<kbd>Enter</kbd> 重试";
@@ -666,36 +661,6 @@ function updateShortcutHint(state) {
         html = "";
     }
     el.innerHTML = html;
-}
-// === FSRS-5 Spaced Repetition ===
-var FSRS_W=[0.40255,1.18385,3.173,15.69105,7.1949,0.5345,1.4604,0.0046,1.54575,0.1192,1.01925,1.9395,0.11,0.29605,2.2698,0.2315,2.9898,0.51655,0.6621];
-var REQUEST_R=0.9;
-function fsrsInit(grade){
-    var i=grade-1;return{s:FSRS_W[i],d:Math.min(10,Math.max(1,FSRS_W[4]-Math.exp(FSRS_W[5]*i)+1))};
-}
-function fsrsR(t,s){var f=Math.pow(0.9,-1/FSRS_W[18])-1;return Math.pow(1+f*t/s,-FSRS_W[18]);}
-function fsrsInterval(s){var f=Math.pow(0.9,-1/FSRS_W[18])-1;return Math.max(1,Math.round(s/f*(Math.pow(REQUEST_R,1/FSRS_W[18])-1)));}
-function fsrsNext(d,s,r,grade){
-    var dd=-FSRS_W[5]*(grade-3);var d2=d+dd*(10-d)/9;
-    var d04=FSRS_W[3]-Math.exp(FSRS_W[5]*3)+1;var d3=FSRS_W[6]*d04+(1-FSRS_W[6])*d2;
-    d3=Math.min(10,Math.max(1,d3));var s2;
-    if(grade===1){s2=FSRS_W[10]*Math.pow(d3,-FSRS_W[11])*(Math.pow(s+1,FSRS_W[12])-1)*Math.exp(FSRS_W[13]*(1-r));s2=Math.max(0.1,s2);}
-    else{var si=Math.exp(FSRS_W[7])*(11-d3)*Math.pow(s,-FSRS_W[8])*(Math.exp(FSRS_W[9]*(1-r))-1);if(grade===2)si*=FSRS_W[14];if(grade===4)si*=FSRS_W[15];s2=s*(si+1);s2=Math.max(0.1,s2);}
-    var days=fsrsInterval(s2);return{s:s2,d:d3,days:days,n:Date.now()+days*86400000};
-}
-function fsrsSchedule(cardId,grade){
-    var p=prog[cardId]||{};var s=p.s||0,d=p.d||5,r=1;
-    if(!p.s){var init=fsrsInit(grade);s=init.s;d=init.d;}
-    else{var elapsed=p.n?(Date.now()-p.n+p.i*3600000):0;var tDays=Math.max(0,elapsed/86400000);r=fsrsR(tDays,s);var next=fsrsNext(d,s,r,grade);s=next.s;d=next.d;}
-    var days=fsrsInterval(s);p.s=s;p.d=d;p.i=days*24;p.n=Date.now()+days*86400000;p.r=(p.r||0)+1;
-    if(grade===1){p.w=(p.w||0)+1;delete p.done;}else{p.w=0;p.done=true;delete p.p42;}
-    if(days>=30)p.m=true;else delete p.m;prog[cardId]=p;
-}
-function rateAndNext(grade){
-    if(!curCard)return;fsrsSchedule(curCard.i,grade);saveProg();
-    document.getElementById("rating-btns").classList.add("hide");
-    document.getElementById("rating-btns").style.display="none";
-    nextCard();
 }
 function showCard() {
     _cardShownAt = Date.now(); // 记录卡片显示时间
@@ -796,8 +761,9 @@ function showCard() {
     document.getElementById("card-box").classList.remove("wrong","correct");
     document.getElementById("btn-submit").classList.remove("hide");
     document.getElementById("btn-show").classList.add("hide");
-    document.getElementById("rating-btns").classList.add("hide");
-    document.getElementById("rating-btns").style.display="none";
+    document.getElementById("btn-next").classList.add("hide");
+    document.getElementById("btn-easy").classList.add("hide");
+    document.getElementById("btn-42").classList.add("hide");
     document.getElementById("hooray").classList.add("hide");
     updateShortcutHint("answer");
     
@@ -816,7 +782,7 @@ function showHooray() {
     document.getElementById("opts-area").classList.add("hide");
     document.getElementById("ans-inp").classList.add("hide");
     document.getElementById("btn-submit").classList.add("hide");
-    document.getElementById("btn-show").classList.add("hide");document.getElementById("rating-btns").classList.add("hide");document.getElementById("rating-btns").style.display="none";
+    ["btn-show","btn-next","btn-easy","btn-42"].forEach(function(id){ document.getElementById(id).classList.add("hide"); });
     document.getElementById("fb").classList.add("hide");
     document.getElementById("hooray").classList.remove("hide");
     document.getElementById("shortcut-hint").innerHTML = "";
@@ -887,21 +853,86 @@ function submitAns() {
         if(el) el.textContent = '今日: '+sd.n;
     } catch(e){}
     if(correct) {
-    if(!isMulti) inp.disabled = true;
-    document.getElementById("btn-submit").classList.add("hide");
-    document.getElementById("btn-show").classList.add("hide");
-    document.getElementById("rating-btns").classList.remove("hide");
-    document.getElementById("rating-btns").style.display="flex";
-    updateShortcutHint("fsrs");
-    var _cb=document.getElementById("card-box");_cb.classList.remove("wrong");_cb.classList.add("correct");
-} else {
+        if(!isMulti) inp.disabled = true;
+        document.getElementById("btn-submit").classList.add("hide");
+        document.getElementById("btn-show").classList.add("hide");
+        document.getElementById("btn-next").classList.remove("hide");
+        document.getElementById("btn-easy").classList.remove("hide");
+        document.getElementById("btn-42").classList.remove("hide");
+        updateShortcutHint("correct");
+        var _cb=document.getElementById("card-box");_cb.classList.remove("wrong");_cb.classList.add("correct");
+        var p = prog[curCard.i] || {};
+        p.r = (p.r||0) + 1;
+        var ef = p.e || 2.5;
+        var prevI = p.i || 0;
+        var _answerTime = Date.now() - _cardShownAt; // 答题用时(毫秒)
+        var _isFast = _answerTime < 15000 && (p.w || 0) === 0; // 15秒内答对且之前没答错过
+        
+        if(p.r <= 3 && !_isFast) {
+            // === 简化学习阶段: 答错/犹豫的卡片才需要 ===
+            // 间隔: 15min → 1h → 1d (仅2次同日回访，比原方案少一半)
+            var learnLevels = [0.25, 1, 24]; // 单位: 小时
+            var idx = Math.min(p.r - 1, learnLevels.length - 1);
+            var hours = learnLevels[idx];
+            if(hours < 1) {
+                p.n = Date.now() + hours * 3600000;
+                p.i = hours;
+            } else if(hours < 24) {
+                p.n = Date.now() + hours * 3600000;
+                p.i = hours;
+            } else {
+                p.n = Date.now() + 24 * 3600000;
+                p.i = 24;
+            }
+        } else if(_isFast && p.r <= 3) {
+            // === 快速正确: 跳过学习阶段，直接1天后复习 ===
+            p.r = 5; // 直接进入复习阶段
+            p.n = Date.now() + 86400000;
+            p.i = 24;
+        } else {
+            // === 复习阶段: SM-2 指数增长 ===
+            // interval = prev_interval × EF (以天为单位)
+            ef = Math.min(3.0, ef + 0.1); // 答对 EF 略增, 上限3.0
+            var prevDays = prevI > 0 ? prevI / 24 : 1;
+                        var newDays = Math.min(365, Math.max(1, Math.round(prevDays * ef)));
+            p.i = newDays * 24; // 统一存储为小时
+            p.n = Date.now() + newDays * 86400000;
+        }
+        p.e = ef;
+        p.w = 0; // 答对重置连续答错计数
+        delete p.p42; // 清除42天推迟标记
+        p.done = true;
+        prog[curCard.i] = p;
+    } else {
         if(!correct) { inp.disabled = false; inp.value = ""; inp.focus();if(window.innerWidth<700){setTimeout(function(){inp.scrollIntoView({behavior:"smooth",block:"center"});},300);} document.getElementById("btn-submit").disabled=false; var _cb=document.getElementById("card-box");_cb.classList.remove("correct");_cb.classList.add("wrong"); }
         document.getElementById("btn-submit").classList.remove("hide");
         document.getElementById("btn-show").classList.remove("hide");
-        document.getElementById("rating-btns").classList.add("hide");
-        document.getElementById("rating-btns").style.display="none";
+        document.getElementById("btn-next").classList.add("hide");
+        document.getElementById("btn-easy").classList.add("hide");
+        document.getElementById("btn-42").classList.add("hide");
         updateShortcutHint("wrong");
-        // FSRS: scheduled by rating buttons
+        var p = prog[curCard.i] || {};
+        var ef = Math.max(1.3, (p.e||2.5) - 0.2); // 答错 EF 降低
+        var wrongCnt = (p.w || 0) + 1; // 累计连续答错次数
+        if(p.r <= 3) {
+            // 学习阶段答错: 递增惩罚 1min → 2min → 5min → 15min
+            var wrongIntervals = [1, 2, 5, 15]; // 分钟
+            var wIdx = Math.min(wrongCnt - 1, wrongIntervals.length - 1);
+            var delayMin = wrongIntervals[wIdx];
+            p.n = Date.now() + delayMin * 60000;
+            p.i = 0;
+            p.r = Math.max(0, (p.r||0) - 1); // 学习进度退一步
+        } else {
+            // 复习阶段答错: 退回到较短间隔, 保留部分记忆
+            var prevDays = p.i > 0 ? (p.i / 24) : 1;
+            var newDays = Math.max(1, Math.round(prevDays * 0.5)); // 间隔减半
+            p.i = newDays * 24;
+            p.n = Date.now() + 60000; // 1分钟后重试(本次会话内)
+            p.r = 5; // 不完全重置, 保持在复习阶段入口
+        }
+        p.e = ef;
+        p.w = wrongCnt;
+        prog[curCard.i] = p;
     }
     saveProg();
     document.getElementById("today-cnt").textContent="今日: "+(function(){try{var s=JSON.parse(localStorage.getItem("y_stats")||"{}");var t=new Date(),k=t.getFullYear()+"-"+(t.getMonth()+1)+"-"+(t.getDate());return Math.max(sessStats.tot,s.d===k?(s.n||0):0);}catch(e){return sessStats.tot;}})();
@@ -909,7 +940,19 @@ function submitAns() {
 }
 function nextCard() { cardIdx++; showCard(); }
 
+function markEasy() {
+    if(!curCard) return;
+    prog[curCard.i] = {m:true, i:90, n:Date.now()+90*86400000};
+    saveProg(); cardIdx++; showCard();
+}
 
+function mark42() {
+    if(!curCard) return;
+    var p = prog[curCard.i] || {};
+    p.i = 42; p.n = Date.now()+42*86400000; p.p42 = true;
+    prog[curCard.i] = p;
+    saveProg(); cardIdx++; showCard();
+}
 
 var _studySkipTo = null;
 var _studyDepth=0;function startStudyAll() {if(++_studyDepth>50){alert("全部学习完成！");_studySkipTo=null;_studyDepth=0;goHome();return;}
@@ -1227,10 +1270,9 @@ document.getElementById("btn-show").onclick = function() {
     fb.className = "fb no"; fb.innerHTML = "正确答案："+sanitizeHTML(curCard.a);
     document.getElementById("btn-show").classList.add("hide");
 };
-document.getElementById("btn-again").onclick = function(){rateAndNext(1);};
-document.getElementById("btn-hard").onclick = function(){rateAndNext(2);};
-document.getElementById("btn-good").onclick = function(){rateAndNext(3);};
-document.getElementById("btn-easy").onclick = function(){rateAndNext(4);};
+document.getElementById("btn-next").onclick = nextCard;
+document.getElementById("btn-easy").onclick = markEasy;
+document.getElementById("btn-42").onclick = mark42;
 document.getElementById("back-mod2").onclick = function() {
     document.getElementById("scr-sections").classList.add("hide");
     var _sm2=document.getElementById("scr-modules");_sm2.classList.remove("hide");_sm2.classList.remove("page-in");void _sm2.offsetWidth;_sm2.classList.add("page-in");
@@ -1269,7 +1311,7 @@ document.addEventListener("keydown", function(e) {
     // Enter: 提交或下一题
     if(e.key==="Enter") {
         if(!document.getElementById("btn-submit").classList.contains("hide")) submitAns();
-        else if(!document.getElementById("rating-btns").classList.contains("hide")) rateAndNext(3);
+        else if(!document.getElementById("btn-next").classList.contains("hide")) nextCard();
     }
     // 数字键 1-4 快速选择选项
     if(e.key >= "1" && e.key <= "4" && !document.getElementById("btn-submit").classList.contains("hide")) {
@@ -1280,24 +1322,18 @@ document.addEventListener("keydown", function(e) {
             if(opts[idx]) opts[idx].click();
         }
     }
-    // E键：重来(Again)
-    if((e.key==="e"||e.key==="E") && !document.getElementById("rating-btns").classList.contains("hide")) {
-        e.preventDefault();rateAndNext(1);
+    // E键：太简单了
+    if((e.key==="e"||e.key==="E") && !document.getElementById("btn-easy").classList.contains("hide")) {
+        e.preventDefault();
+        markEasy();
     }
-    // D键：困难(Hard)
-    if((e.key==="d"||e.key==="D") && !document.getElementById("rating-btns").classList.contains("hide")) {
-        e.preventDefault();rateAndNext(2);
-    }
-    // F键：良好(Good)
-    if((e.key==="f"||e.key==="F") && !document.getElementById("rating-btns").classList.contains("hide")) {
-        e.preventDefault();rateAndNext(3);
-    }
-    // G键：简单(Easy)
-    if((e.key==="g"||e.key==="G") && !document.getElementById("rating-btns").classList.contains("hide")) {
-        e.preventDefault();rateAndNext(4);
+    // D键：42天后再问我
+    if((e.key==="d"||e.key==="D") && !document.getElementById("btn-42").classList.contains("hide")) {
+        e.preventDefault();
+        mark42();
     }
     // 空格键：下一题
-    if(e.key === " " && !document.getElementById("rating-btns").classList.contains("hide") && (!document.activeElement || document.activeElement.tagName !== "INPUT")) {
+    if(e.key === " " && !document.getElementById("btn-next").classList.contains("hide") && (!document.activeElement || document.activeElement.tagName !== "INPUT")) {
         e.preventDefault();
         nextCard();
     }
