@@ -1086,7 +1086,7 @@ var _studyDepth=0;function startStudyAll() {if(++_studyDepth>50){alert("全部�
 }
 
 function resetAll() {
-    var lang = langData.length > 0 ? langData[0].name.indexOf("Deutsch") >= 0 ? "德语" : "英语" : "当前语言";
+    var lang = currentLang === "german" ? "德语" : currentLang === "english" ? "英语" : "当前语言";
     if(!confirm("\u786e\u5b9a\u8981\u91cd\u7f6e" + lang + "\u7684\u5168\u90e8\u8fdb\u5ea6\u5417\uff1f\u6b64\u64cd\u4f5c\u4e0d\u53ef\u6062\u590d\uff01")) return;
     var _code = prompt("请输入 RESET 确认重置");
     if(_code !== "RESET") return;
@@ -1122,8 +1122,9 @@ var langData = [];
 var langFiles = {"german": "study_data_compact.json", "english": "english_data.json"};
 var langInfo = {"german": {"name": "Deutsch", "flag": "🇩🇪"}, "english": {"name": "English", "flag": "🇬🇧"}};
 
+var currentLang = "german";
 function switchLang(lang) {
-    var currentLang = lang;
+    currentLang = lang;
     try{localStorage.setItem("y_lang",lang);}catch(e){}
     document.getElementById("btn-lang-de").className = lang==="german" ? "btn btn-lg btn-primary" : "btn btn-lg btn-outline-secondary";
     document.getElementById("btn-lang-en").className = lang==="english" ? "btn btn-lg btn-primary" : "btn btn-lg btn-outline-secondary";
