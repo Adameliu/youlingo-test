@@ -80,8 +80,6 @@ body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI
 .shortcut-hint{text-align:center;margin-top:10px;padding:6px 12px;background:#f8f9fa;border-radius:8px;font-size:.72rem;color:#999;letter-spacing:.3px;line-height:1.6;user-select:none;transition:opacity .2s}
 .shortcut-hint:empty{display:none}
 .shortcut-hint kbd{display:inline-block;padding:1px 5px;font-size:.65rem;font-family:inherit;color:#555;background:#fff;border:1px solid #d0d0d0;border-radius:4px;box-shadow:0 1px 0 #bbb;margin:0 1px;vertical-align:middle;line-height:1.4}
-#btn-misclick{color:#6c757d;border-color:#dee2e6;background:#fff;font-size:.85rem}
-#btn-misclick:hover{background:#f8f9fa;border-color:#adb5bd;color:#495057}
 @media(max-width:600px){.grid-3{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}.card-box{padding:18px 14px;border-radius:14px}.opt-btn{padding:14px;font-size:1rem;min-height:48px}.inp{padding:14px;font-size:1.1rem;min-height:48px}.btn{min-height:44px}.stat .n{font-size:1.3rem}}
 </style>
 </head>
@@ -158,7 +156,7 @@ body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI
 <button class="btn btn-sm btn-success hide" id="btn-next">下一题</button>
 <button class="btn btn-sm btn-warning hide" id="btn-easy">太简单了</button>
 <button class="btn btn-sm btn-info hide" id="btn-42" title="42 天后再见面">42天后再问我</button>
-<button class="btn btn-sm btn-outline-secondary hide" id="btn-misclick">手抖了</button>
+<button class="btn btn-sm btn-outline-secondary hide" id="btn-misclick" style="color:#6c757d;border-color:#dee2e6">手抖了</button>
 </div>
 <div class="shortcut-hint" id="shortcut-hint"></div>
 <div class="hooray hide fade-in" id="hooray">
@@ -770,7 +768,7 @@ function showCard() {
         // Only show ans-inp if not in multi-field mode
         if(!curCard.fields || curCard.fields.length <= 1) {
             inp.style.display = "";
-            inp.value = ""; inp.className = "form-control inp"; inp.disabled = false; inp.focus();
+            inp.value = ""; inp.className = "form-control inp"; inp.disabled = false; inp.focus();if(window.innerWidth<700){setTimeout(function(){inp.scrollIntoView({behavior:"smooth",block:"center"});},300);}
         }
     }
 
@@ -923,7 +921,7 @@ function submitAns() {
         p.done = true;
         prog[curCard.i] = p;
     } else {
-        if(!correct) { _prevProg = JSON.parse(JSON.stringify(prog[curCard.i] || {})); inp.disabled = false; inp.value = "";if(window.innerWidth<700){setTimeout(function(){inp.scrollIntoView({behavior:"smooth",block:"center"});},300);} document.getElementById("btn-submit").disabled=false; var _cb=document.getElementById("card-box");_cb.classList.remove("correct");_cb.classList.add("wrong"); }
+        if(!correct) { _prevProg = JSON.parse(JSON.stringify(prog[curCard.i] || {})); inp.disabled = false; inp.value = ""; inp.focus();if(window.innerWidth<700){setTimeout(function(){inp.scrollIntoView({behavior:"smooth",block:"center"});},300);} document.getElementById("btn-submit").disabled=false; var _cb=document.getElementById("card-box");_cb.classList.remove("correct");_cb.classList.add("wrong"); }
         document.getElementById("btn-submit").classList.remove("hide");
         document.getElementById("btn-show").classList.remove("hide");
         document.getElementById("btn-misclick").classList.remove("hide");
