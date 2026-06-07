@@ -672,7 +672,7 @@ function markMisclick() {
     document.getElementById("btn-misclick").classList.add("hide");
     document.getElementById("card-box").classList.remove("wrong");
     document.getElementById("fb").classList.add("hide");
-    inp.disabled = false; inp.value = ""; inp.focus();
+    var _inp = document.getElementById("ans-inp"); _inp.disabled = false; _inp.value = ""; _inp.focus();
     document.getElementById("btn-submit").disabled = false;
     document.getElementById("btn-submit").classList.remove("hide");
     document.getElementById("btn-show").classList.add("hide");
