@@ -942,7 +942,11 @@ function nextCard() { cardIdx++; showCard(); }
 
 function markEasy() {
     if(!curCard) return;
-    prog[curCard.i] = {m:true, i:90, n:Date.now()+90*86400000};
+    var p = prog[curCard.i] || {};
+    p.m = true; p.i = 90; p.n = Date.now()+90*86400000;
+    prog[curCard.i] = p;
+    sessStats.ok++; sessStats.tot++;
+    try { var td=new Date(),tk=td.getFullYear()+"-"+(td.getMonth()+1)+"-"+td.getDate(); var sd=JSON.parse(localStorage.getItem("y_stats")||"{}"); if(sd.d!==tk){sd={d:tk,n:0};} sd.n++; localStorage.setItem("y_stats",JSON.stringify(sd)); var sp=statsPath(); sp&&db.ref(sp).set(sd).catch(function(){}); } catch(e){}
     saveProg(); cardIdx++; showCard();
 }
 
@@ -951,6 +955,8 @@ function mark42() {
     var p = prog[curCard.i] || {};
     p.i = 42; p.n = Date.now()+42*86400000; p.p42 = true;
     prog[curCard.i] = p;
+    sessStats.ok++; sessStats.tot++;
+    try { var td=new Date(),tk=td.getFullYear()+"-"+(td.getMonth()+1)+"-"+td.getDate(); var sd=JSON.parse(localStorage.getItem("y_stats")||"{}"); if(sd.d!==tk){sd={d:tk,n:0};} sd.n++; localStorage.setItem("y_stats",JSON.stringify(sd)); var sp=statsPath(); sp&&db.ref(sp).set(sd).catch(function(){}); } catch(e){}
     saveProg(); cardIdx++; showCard();
 }
 
@@ -1269,6 +1275,7 @@ document.getElementById("btn-show").onclick = function() {
     var fb = document.getElementById("fb");
     fb.className = "fb no"; fb.innerHTML = "正确答案："+sanitizeHTML(curCard.a);
     document.getElementById("btn-show").classList.add("hide");
+    document.getElementById("btn-submit").classList.add("hide");
 };
 document.getElementById("btn-next").onclick = nextCard;
 document.getElementById("btn-easy").onclick = markEasy;
@@ -1323,12 +1330,12 @@ document.addEventListener("keydown", function(e) {
         }
     }
     // E键：太简单了
-    if((e.key==="e"||e.key==="E") && !document.getElementById("btn-easy").classList.contains("hide")) {
+    if((e.key==="e"||e.key==="E") && !document.getElementById("btn-easy").classList.contains("hide") && (!document.activeElement || document.activeElement.tagName !== "INPUT")) {
         e.preventDefault();
         markEasy();
     }
     // D键：42天后再问我
-    if((e.key==="d"||e.key==="D") && !document.getElementById("btn-42").classList.contains("hide")) {
+    if((e.key==="d"||e.key==="D") && !document.getElementById("btn-42").classList.contains("hide") && (!document.activeElement || document.activeElement.tagName !== "INPUT")) {
         e.preventDefault();
         mark42();
     }
