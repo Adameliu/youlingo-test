@@ -156,6 +156,7 @@ body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI
 <button class="btn btn-sm btn-success hide" id="btn-next">下一题</button>
 <button class="btn btn-sm btn-warning hide" id="btn-easy">太简单了</button>
 <button class="btn btn-sm btn-info hide" id="btn-42" title="42 天后再见面">42天后再问我</button>
+<button class="btn btn-sm btn-outline-secondary hide" id="btn-misclick" style="color:#6c757d;border-color:#dee2e6">手抖了</button>
 </div>
 <div class="shortcut-hint" id="shortcut-hint"></div>
 <div class="hooray hide fade-in" id="hooray">
@@ -662,6 +663,21 @@ function updateShortcutHint(state) {
     }
     el.innerHTML = html;
 }
+var _prevProg = null;
+function markMisclick() {
+    if(!curCard || !_prevProg) return;
+    prog[curCard.i] = _prevProg;
+    _prevProg = null;
+    saveProg();
+    document.getElementById("btn-misclick").classList.add("hide");
+    document.getElementById("card-box").classList.remove("wrong");
+    document.getElementById("fb").classList.add("hide");
+    inp.disabled = false; inp.value = ""; inp.focus();
+    document.getElementById("btn-submit").disabled = false;
+    document.getElementById("btn-submit").classList.remove("hide");
+    document.getElementById("btn-show").classList.add("hide");
+    updateShortcutHint("answer");
+}
 function showCard() {
     _cardShownAt = Date.now(); // 记录卡片显示时间
     saveState();
@@ -905,9 +921,10 @@ function submitAns() {
         p.done = true;
         prog[curCard.i] = p;
     } else {
-        if(!correct) { inp.disabled = false; inp.value = ""; inp.focus();if(window.innerWidth<700){setTimeout(function(){inp.scrollIntoView({behavior:"smooth",block:"center"});},300);} document.getElementById("btn-submit").disabled=false; var _cb=document.getElementById("card-box");_cb.classList.remove("correct");_cb.classList.add("wrong"); }
+        if(!correct) { _prevProg = JSON.parse(JSON.stringify(prog[curCard.i] || {})); inp.disabled = false; inp.value = ""; inp.focus();if(window.innerWidth<700){setTimeout(function(){inp.scrollIntoView({behavior:"smooth",block:"center"});},300);} document.getElementById("btn-submit").disabled=false; var _cb=document.getElementById("card-box");_cb.classList.remove("correct");_cb.classList.add("wrong"); }
         document.getElementById("btn-submit").classList.remove("hide");
         document.getElementById("btn-show").classList.remove("hide");
+        document.getElementById("btn-misclick").classList.remove("hide");
         document.getElementById("btn-next").classList.add("hide");
         document.getElementById("btn-easy").classList.add("hide");
         document.getElementById("btn-42").classList.add("hide");
@@ -1271,6 +1288,7 @@ function goHome() {
 
 // Event bindings
 document.getElementById("btn-submit").onclick = submitAns;
+document.getElementById("btn-misclick").onclick = markMisclick;
 document.getElementById("btn-show").onclick = function() {
     if(!curCard) return;
     var fb = document.getElementById("fb");
@@ -1339,6 +1357,11 @@ document.addEventListener("keydown", function(e) {
     if((e.key==="d"||e.key==="D") && !document.getElementById("btn-42").classList.contains("hide") && (!document.activeElement || document.activeElement.tagName !== "INPUT")) {
         e.preventDefault();
         mark42();
+    }
+    // M键：手抖了(Misclick)
+    if((e.key==="m"||e.key==="M") && !document.getElementById("btn-misclick").classList.contains("hide") && (!document.activeElement || document.activeElement.tagName !== "INPUT")) {
+        e.preventDefault();
+        markMisclick();
     }
     // 空格键：下一题
     if(e.key === " " && !document.getElementById("btn-next").classList.contains("hide") && (!document.activeElement || document.activeElement.tagName !== "INPUT")) {
