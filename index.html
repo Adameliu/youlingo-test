@@ -830,7 +830,7 @@ function submitAns() {
         if(!correct) fb.innerHTML = "\u2717 \u90e8\u5206\u9519\u8bef\uff0c\u7ea2\u8272\u4e3a\u6b63\u786e\u7b54\u6848";
         else fb.innerHTML = "\u2713 \u5168\u5bf9\uff01";
         fb.className = "fb " + (correct?"ok":"no");
-        fb.style.whiteSpace = "pre-line";
+        fb.style.whiteSpace = "pre-wrap";
     } else {
         var ua = inp.value.trim();
         correct = checkAns(ua, curCard.a);
@@ -838,7 +838,7 @@ function submitAns() {
         var hint = "";
         if(!correct && ua.toLowerCase() === curCard.a.toLowerCase()) hint = " (\u6ce8\u610f\u5927\u5c0f\u5199)";
         fb.innerHTML = correct ? "✓ 答对了！正确答案："+sanitizeHTML(curCard.a) : "✗ 正确答案："+sanitizeHTML(curCard.a)+"\n    你的答案："+sanitizeHTML(ua)+hint;
-        fb.style.whiteSpace = "pre-line";
+        fb.style.whiteSpace = "pre-wrap";
         inp.className = "form-control inp " + (correct?"ok":"no");
     }
     
