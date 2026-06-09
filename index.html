@@ -58,36 +58,35 @@ body { background: var(--bg); font-family: 'Nunito', system-ui, -apple-system, s
 .sec-item .sb .fill { height: 100%; background: var(--primary); transition: width .4s ease; }
 .sec-item .badge { font-size: .8rem; padding: 6px 10px; font-weight: 700; background: var(--primary-light) !important; color: var(--primary-dark) !important; border-radius: 10px; }
 
-/* OPTIMIZED STUDY INTERFACE */
-.card-box { background: var(--surface); border-radius: 20px; box-shadow: 0 6px 16px rgba(0,0,0,0.04); padding: 20px 24px; margin-top: 10px; transition: all .2s; border: 2px solid var(--border); display: flex; flex-direction: column; }
-.card-box.wrong { border: 2px solid var(--danger); box-shadow: 0 6px 16px var(--danger-light); animation: shake .4s ease; }
-.card-box.correct { border: 2px solid var(--success); box-shadow: 0 6px 16px var(--success-light); }
-.q-text { font-size: 1.1rem; font-weight: 700; line-height: 1.5; margin-bottom: 15px; color: var(--text-main); }
-.q-text .audio-btn { display: inline-block; width: 30px; cursor: pointer; vertical-align: middle; transition: transform .15s; }
-.q-text .audio-btn:hover { transform: scale(1.1); }
+/* OPTIMIZED STUDY INTERFACE - COMPACT VERSION */
+.card-box { background: var(--surface); border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); padding: 15px 20px; margin-top: 8px; transition: all .2s; border: 2px solid var(--border); display: flex; flex-direction: column; }
+.card-box.wrong { border: 2px solid var(--danger); box-shadow: 0 4px 12px var(--danger-light); animation: shake .4s ease; }
+.card-box.correct { border: 2px solid var(--success); box-shadow: 0 4px 12px var(--success-light); }
+.q-text { font-size: 1rem; font-weight: 700; line-height: 1.4; margin-bottom: 12px; color: var(--text-main); }
+.q-text .audio-btn { display: inline-block; width: 28px; cursor: pointer; vertical-align: middle; }
 
 /* OPTIMIZED OPTIONS LIST */
-#opts-area { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-.opt-btn { font-size: 1rem; font-weight: 700; padding: 12px 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--surface); cursor: pointer; transition: all .15s ease; text-align: left; box-shadow: 0 3px 0 var(--border); color: var(--text-main); margin-bottom: 0; }
+#opts-area { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.opt-btn { font-size: 0.95rem; font-weight: 700; padding: 10px 14px; border-radius: 12px; border: 2px solid var(--border); background: var(--surface); cursor: pointer; transition: all .15s ease; text-align: left; box-shadow: 0 3px 0 var(--border); color: var(--text-main); margin-bottom: 0; }
 .opt-btn:hover { border-color: var(--primary); background: var(--primary-light); box-shadow: 0 3px 0 var(--primary-border); }
 .opt-btn:active { transform: translateY(3px); box-shadow: none; }
 .opt-btn.sel { border-color: var(--primary); background: var(--primary-light); color: var(--primary-dark); box-shadow: 0 3px 0 var(--primary-border); }
 
 /* OPTIMIZED INPUT */
-.inp { font-size: 1.1rem; font-weight: 700; text-align: center; padding: 12px; border-radius: 14px; border: 2px solid var(--border); background: var(--bg); transition: all .2s ease; color: var(--text-main); width: 100%; margin-bottom: 0; }
+.inp { font-size: 1rem; font-weight: 700; text-align: center; padding: 10px; border-radius: 12px; border: 2px solid var(--border); background: var(--bg); transition: all .2s ease; color: var(--text-main); width: 100%; margin-bottom: 0; }
 .inp:focus { border-color: var(--primary); background: var(--surface); box-shadow: none; outline: none; }
 .inp.ok { border-color: var(--success) !important; background: var(--success-light) !important; color: var(--success-border); }
 .inp.no { border-color: var(--danger) !important; background: var(--danger-light) !important; color: var(--danger-border); animation: shake .4s ease; }
 
 /* OPTIMIZED FEEDBACK */
-.fb { padding: 12px 16px; border-radius: 14px; margin-top: 12px; font-size: 0.95rem; font-weight: 800; margin-bottom: 0; }
+.fb { padding: 10px 14px; border-radius: 12px; margin-top: 8px; font-size: 0.9rem; font-weight: 800; margin-bottom: 0; }
 .fb.ok { background: var(--success-light) !important; color: var(--success-border) !important; border: none !important; }
 .fb.no { background: var(--danger-light) !important; color: var(--danger-border) !important; border: none !important; }
 .fb.fb-info { background: var(--primary-light) !important; color: var(--primary-dark) !important; border: none !important; }
 
 /* OPTIMIZED ACTIONS BAR */
-.acts { display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap; justify-content: center; }
-.acts .btn { flex: 1; min-width: 100px; font-size: 0.95rem; padding: 10px 16px; }
+.acts { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; justify-content: center; }
+.acts .btn { flex: 1; min-width: 80px; font-size: 0.85rem; padding: 8px 12px; }
 
 .pbar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
 .pbar .fill { height: 100%; background: var(--success); border-radius: 3px; transition: width .4s ease; }
@@ -426,7 +425,6 @@ function loadDailyStats() {
             }
             refreshStatsDisplay();
         }).catch(function(e){
-            console.log("LOAD_STATS_ERR:",e.message);
             refreshStatsDisplay();
         });
         
@@ -434,11 +432,16 @@ function loadDailyStats() {
     } catch(e){}
 }
 
-var _realtimeSubscribed = false;
+var _realtimeChannel = null;
 function subscribeRealtime() {
-    if(!_uid || _realtimeSubscribed) return;
-    _realtimeSubscribed = true;
-    _supa.channel('user-data-sync')
+    if(!_uid) return;
+    // If already subscribed to a different UID, cleanup first
+    if(_realtimeChannel) {
+        if(_realtimeChannel.topic === 'user-data-sync:' + _uid) return; // Already correct
+        _supa.removeChannel(_realtimeChannel);
+    }
+    
+    _realtimeChannel = _supa.channel('user-data-sync:' + _uid)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'progress', filter: 'uid=eq.'+_uid }, function(payload) {
             if(_syncing) return;
             var d = payload.new && payload.new.data;
@@ -447,27 +450,19 @@ function subscribeRealtime() {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(prog));
                 renderMods();
                 
-                // Fallback sync: if progress synced successfully, fetch daily_stats manually
-                // to guarantee they stay perfectly in sync even if the daily_stats realtime channel is blocked.
+                // Fallback sync: fetch daily_stats manually on progress change
                 _supa.from("daily_stats").select("data").eq("uid",_uid).maybeSingle().then(function(result) {
-                    if(result.data && result.data.data) {
-                        handleRemoteStats(result.data.data);
-                    } else {
-                        refreshStatsDisplay();
-                    }
+                    if(result.data && result.data.data) handleRemoteStats(result.data.data);
+                    else refreshStatsDisplay();
                 }).catch(function(){ refreshStatsDisplay(); });
             }
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_stats', filter: 'uid=eq.'+_uid }, function(payload) {
             try {
-                if(payload.new && payload.new.data) {
-                    handleRemoteStats(payload.new.data);
-                }
+                if(payload.new && payload.new.data) handleRemoteStats(payload.new.data);
             } catch(e){}
         })
-        .subscribe(function(status) {
-            console.log("Realtime status:", status);
-        });
+        .subscribe();
 }
 
 function loadProg() {
@@ -494,7 +489,9 @@ function loadProg() {
     
     subscribeRealtime();
 }
-loadProg();
+// Initial load removed here, moved to Auth state change only
+// loadProg();
+
 // Load today count from localStorage + Supabase sync
 // Streak tracking
 function getTodayKey() {
@@ -543,6 +540,7 @@ function onStudyComplete() { updateStreak(); }
 // Auth functions
 var isDemo = false;
 function doLogout() {
+    if(_realtimeChannel) { _supa.removeChannel(_realtimeChannel); _realtimeChannel = null; }
     if(!isDemo) { _supa.auth.signOut(); localStorage.removeItem("sb-iwpzcmmwtnvcphatrucd-auth-token"); }
     isDemo = false;
     try { localStorage.removeItem("y_demo"); } catch(e){}
@@ -560,6 +558,7 @@ function demoLogin() {
         document.getElementById("app").insertAdjacentHTML("afterbegin", '<div id="demo-alert" class="alert alert-warning text-center py-1 mb-2" style="font-size:.8rem">⚠️ Demo 模式 · 清除缓存后数据会丢失</div>');
     }
     loadProg();
+    loadDailyStats();
 }
 function login() {
     var email = document.getElementById("login-email").value.trim();
@@ -575,6 +574,7 @@ function login() {
         document.getElementById("login-page").style.display = "none";
         document.getElementById("app").style.display = "";
         loadProg();
+        loadDailyStats();
     }).catch(function(e) {
         errDiv.textContent = "登录失败: " + (e.message || "请检查账号密码");
         errDiv.classList.remove("hide");
@@ -587,18 +587,21 @@ function login() {
 try { if(localStorage.getItem("y_demo") === "1") { isDemo = true; } } catch(e){}
 
 _supa.auth.onAuthStateChange(function(event, session) {
-    if(session) _uid = session.user.id;
-    if(session || isDemo) {
-        document.getElementById("login-page").style.display = "none";
-        document.getElementById("app").style.display = "";
-        if(isDemo) {
-            if(!document.getElementById("demo-alert")) {
-        document.getElementById("app").insertAdjacentHTML("afterbegin", '<div id="demo-alert" class="alert alert-warning text-center py-1 mb-2" style="font-size:.8rem">⚠️ Demo 模式 · 清除缓存后数据会丢失</div>');
-    }
+    if(session) {
+        var oldUid = _uid;
+        _uid = session.user.id;
+        if(oldUid !== _uid) {
+             document.getElementById("login-page").style.display = "none";
+             document.getElementById("app").style.display = "";
+             if(isDemo) {
+                 if(!document.getElementById("demo-alert")) {
+                     document.getElementById("app").insertAdjacentHTML("afterbegin", '<div id="demo-alert" class="alert alert-warning text-center py-1 mb-2" style="font-size:.8rem">⚠️ Demo 模式 · 清除缓存后数据会丢失</div>');
+                 }
+             }
+             loadProg();
+             loadDailyStats();
         }
-        loadProg();
-        loadDailyStats();
-    } else {
+    } else if (!isDemo) {
         document.getElementById("login-page").style.display = "";
         document.getElementById("app").style.display = "none";
     }
@@ -788,6 +791,7 @@ function markMisclick() {
     prog[curCard.i] = _prevProg;
     _prevProg = null;
     saveProg();
+    refreshStatsDisplay();
     document.getElementById("btn-misclick").classList.add("hide");
     document.getElementById("card-box").classList.remove("wrong");
     document.getElementById("fb").classList.add("hide");
@@ -927,7 +931,10 @@ function showHooray() {
     var _hs=document.getElementById("hooray-stats");
     if(_hs && sessStats.tot>0){
         var _rate=sessStats.tot>0?Math.round(sessStats.ok/sessStats.tot*100):0;
-        _hs.innerHTML="答对 "+sessStats.ok+"/"+sessStats.tot+" · 正确率 "+_rate+"%";
+        var sd = JSON.parse(localStorage.getItem('y_stats')||'{}');
+        var tk = getTodayDateStr();
+        var todayN = (sd.d === tk) ? (sd.n || 0) : 0;
+        _hs.innerHTML="答对 "+sessStats.ok+"/"+sessStats.tot+" · 正确率 "+_rate+"%<br>今日已学独立卡片: "+todayN;
     }
 }
 
@@ -955,7 +962,12 @@ function submitAns() {
     }
     var correct = false;
     if(isMulti) {
-        // Multi-field: check all fields
+        var allCorrect = true;
+        var anyEmpty = false;
+        for(var fi=0; fi<curCard.fields.length; fi++) {
+            if(!document.getElementById("mf-"+fi).value.trim()) anyEmpty = true;
+        }
+        if(anyEmpty) { _subBtn.disabled = false; return; }
         var allCorrect = true;
         var totalFb = "";
         for(var fi=0; fi<curCard.fields.length; fi++) {
