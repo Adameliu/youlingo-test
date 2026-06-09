@@ -293,6 +293,7 @@ function loadDailyStats() {
         var sd = JSON.parse(localStorage.getItem("y_stats")||"{}");
         var td = new Date(), tk = td.getFullYear()+"-"+(td.getMonth()+1)+"-"+td.getDate();
         _supa.from("daily_stats").select("data").eq("uid",_uid).single().then(function(result) {
+            console.log("loadDailyStats result:", result);
             var fd = result.data && result.data.data;
             if(fd && fd.d === tk && fd.n > (sd.n||0)) {
                 localStorage.setItem("y_stats", JSON.stringify(fd));
