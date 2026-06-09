@@ -387,7 +387,16 @@ function subscribeRealtime() {
                 prog = d;
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(prog));
                 renderMods();
-                refreshStatsDisplay();
+                
+                // Fallback sync: if progress synced successfully, fetch daily_stats manually
+                // to guarantee they stay perfectly in sync even if the daily_stats realtime channel is blocked.
+                _supa.from("daily_stats").select("data").eq("uid",_uid).maybeSingle().then(function(result) {
+                    if(result.data && result.data.data) {
+                        handleRemoteStats(result.data.data);
+                    } else {
+                        refreshStatsDisplay();
+                    }
+                }).catch(function(){ refreshStatsDisplay(); });
             }
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_stats', filter: 'uid=eq.'+_uid }, function(payload) {
