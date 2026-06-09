@@ -288,26 +288,44 @@ function saveProg() {
 }
 
 function loadDailyStats() {
-    if(!_uid) return;
+    if(!_uid) {
+        // Even for logged out/demo users, ensure today's display is correct
+        refreshStatsDisplay();
+        return;
+    }
     try {
         var td = new Date(), tk = td.getFullYear()+"-"+(td.getMonth()+1)+"-"+td.getDate();
+        var sd = JSON.parse(localStorage.getItem("y_stats")||"{}");
+        
+        // Initial cleanup: if local data is from a different day, clear it immediately
+        if(sd.d && sd.d !== tk) {
+            sd = {d:tk, n:0, ids:[]};
+            localStorage.setItem("y_stats", JSON.stringify(sd));
+        }
+
         _supa.from("daily_stats").select("data").eq("uid",_uid).maybeSingle().then(function(result) {
             var fd = result.data && result.data.data;
-            var sd = JSON.parse(localStorage.getItem("y_stats")||"{}");
+            var current_sd = JSON.parse(localStorage.getItem("y_stats")||"{}");
+            
             if(fd) {
-                // If remote data is for today and has more info, or if local data is for an old day
-                if((fd.d === tk && (fd.n || 0) > (sd.n || 0)) || (sd.d !== tk)) {
-                    localStorage.setItem("y_stats", JSON.stringify(fd));
+                if(fd.d === tk) {
+                    // Remote data is for today: take it if it has more cards
+                    if((fd.n || 0) > (current_sd.n || 0)) {
+                        localStorage.setItem("y_stats", JSON.stringify(fd));
+                    }
+                } else {
+                    // Remote data is old: current day should be 0
+                    if(current_sd.d !== tk) {
+                        localStorage.setItem("y_stats", JSON.stringify({d:tk, n:0, ids:[]}));
+                    }
                 }
-            } else if(sd.d !== tk) {
-                // Remote has no data, and local is old: clear local for the new day
-                localStorage.setItem("y_stats", JSON.stringify({d:tk, n:0, ids:[]}));
             }
             refreshStatsDisplay();
         }).catch(function(e){
             console.log("LOAD_STATS_ERR:",e.message);
             refreshStatsDisplay();
         });
+        
         if(!_statsSubscribed) {
             _statsSubscribed = true;
             _supa.channel("stats-changes").on("postgres_changes", {
@@ -321,8 +339,13 @@ function loadDailyStats() {
                     var td2 = new Date(), tk2 = td2.getFullYear()+"-"+(td2.getMonth()+1)+"-"+td2.getDate();
                     if(fd) {
                         var cur = JSON.parse(localStorage.getItem("y_stats")||"{}");
-                        if((fd.d === tk2 && fd.n > (cur.n||0)) || (cur.d !== tk2)) {
+                        // Only sync if remote date is today and has more progress
+                        if(fd.d === tk2 && fd.n > (cur.n||0)) {
                             localStorage.setItem("y_stats", JSON.stringify(fd));
+                            refreshStatsDisplay();
+                        } else if (cur.d !== tk2) {
+                            // Local date is wrong, sync to remote or reset
+                            localStorage.setItem("y_stats", JSON.stringify(fd.d === tk2 ? fd : {d:tk2, n:0, ids:[]}));
                             refreshStatsDisplay();
                         }
                     }
