@@ -4,10 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Youlingo友邻国</title>
-<link rel="icon" type="image/svg+xml" href="./favicon.svg">
-<link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="manifest" href="/manifest.json">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <style>
 :root{--primary:#17a2b8;--bg:#f0f2f5}
 body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0}
@@ -109,7 +111,7 @@ body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI
   </div>
   <button id="btn-login" class="btn btn-primary w-100 mb-2" onclick="login()">登录</button>
   <button class="btn btn-outline-success w-100" onclick="demoLogin()">🎮 Demo 体验（无需账号）</button>
-  <p class="text-center small text-muted mt-3">请输入账号，或点击 Demo</p>
+  <p class="text-center small text-muted mt-3">请输入 Firebase 账号，或点击 Demo</p>
 </div>
 
 <div class="container" id="app" style="display:none">
@@ -270,62 +272,36 @@ var prog = {};
 var _audio = null;
 var _cardShownAt = 0; // 卡片显示时间戳，用于判断答题速度
 
-// Supabase
-var _supa = supabase.createClient('https://iwpzcmmwtnvcphatrucd.supabase.co', 'sb_publishable_1DKV3HyHb9yf5riwUGNwLQ_99TA-F45');
+// Firebase
+var firebaseConfig = {
+    apiKey: "AIzaSyAt62RyhvA6jOPxQKNfILis88f2N-KIAZ4",
+    authDomain: "youlingo-quiz.firebaseapp.com",
+    databaseURL: "https://youlingo-quiz-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "youlingo-quiz",
+    storageBucket: "youlingo-quiz.firebasestorage.app",
+    messagingSenderId: "643293722511",
+    appId: "1:643293722511:web:acf898422182e81c347dfa"
+};
+try { firebase.initializeApp(firebaseConfig); } catch(e) { showFatal('Firebase 初始化失败: '+e.message); }
+var db = null;
+try { db = firebase.database(); } catch(e) { showFatal('数据库连接失败: '+e.message); }
 var _uid = null;
+function syncPath() { return _uid ? "progress/"+_uid : null; }
+function statsPath() { return _uid ? "daily_stats/"+_uid : null; }
 var R2_BASE = "https://pub-1c1a3bd3f4554dc4afce6c91070cf22e.r2.dev";
 
 var _saveTimer = null;
 var _syncing = false;
 function saveProg() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(prog));
-    if(isDemo || !_uid) return;
+    if(isDemo) return;
     if(_saveTimer) clearTimeout(_saveTimer);
     _saveTimer = setTimeout(function() {
         _syncing = true;
-        _supa.from('progress').upsert({uid:_uid, data:prog}, {onConflict:'uid'}).then(function(){_syncing=false;}).catch(function(){_syncing=false;});
+        var sp=syncPath();if(sp)db.ref(sp).set(prog).then(function() { _syncing = false; }).catch(function() { _syncing = false; });
     }, 300);
 }
 
-function loadDailyStats() {
-    if(!_uid) return;
-    try {
-        var sd = JSON.parse(localStorage.getItem("y_stats")||"{}");
-        var td = new Date(), tk = td.getFullYear()+"-"+(td.getMonth()+1)+"-"+td.getDate();
-        _supa.from("daily_stats").select("data").eq("uid",_uid).maybeSingle().then(function(result) {
-                        var fd = result.data && result.data.data;
-            if(fd && fd.d === tk && fd.n > (sd.n||0)) {
-                localStorage.setItem("y_stats", JSON.stringify(fd));
-                var el = document.getElementById("today-cnt");
-                if(el) el.textContent = "今日: "+fd.n;
-            }
-        }).catch(function(e){console.log("LOAD_STATS_ERR:",e.message)});
-        if(!_statsSubscribed) {
-        _statsSubscribed = true;
-        _supa.channel("stats-changes").on("postgres_changes", {
-            event: "*",
-            schema: "public",
-            table: "daily_stats",
-            filter: "uid=eq."+_uid
-        }, function(payload) {
-            try {
-                var fd = payload.new && payload.new.data;
-                var td2 = new Date(), tk2 = td2.getFullYear()+"-"+(td2.getMonth()+1)+"-"+td2.getDate();
-                if(fd && fd.d === tk2) {
-                    var cur = JSON.parse(localStorage.getItem("y_stats")||"{}");
-                    if(fd.n > (cur.n||0)) {
-                        localStorage.setItem("y_stats", JSON.stringify(fd));
-                        var el = document.getElementById("today-cnt");
-                        if(el) el.textContent = "今日: "+fd.n;
-                    }
-                }
-            } catch(e){}
-        }).subscribe();
-        }
-    } catch(e){}
-}
-var _progSubscribed = false;
-var _statsSubscribed = false;
 function loadProg() {
     // Migrate old storage key
     try {
@@ -338,10 +314,22 @@ function loadProg() {
     } catch(e){}
     try { var p = localStorage.getItem(STORAGE_KEY); if(p) prog = JSON.parse(p); } catch(e) {}
     if(isDemo) { renderMods(); return; }
-    if(!_uid) return;
-    // Load from Supabase
-    _supa.from('progress').select('data').eq('uid',_uid).maybeSingle().then(function(result) {
-        var d = result.data && result.data.data;
+    // Migrate old progress_v2 to uid path
+    if(_uid) {
+        db.ref("progress_v2").once("value").then(function(snap) {
+            var old = snap.val();
+            if(old) {
+                var m = false;
+                for(var k in old) {
+                    if(!prog[k]||(old[k].n||0)>(prog[k].n||0)){prog[k]=old[k];m=true;}
+                }
+                if(m) { saveProg(); db.ref("progress_v2").remove(); }
+            }
+        }).catch(function(){});
+    }
+    // Sync from Firebase: merge remote into local, newer n wins
+    var sp=syncPath();sp&&db.ref(sp).once("value").then(function(snapshot) {
+        var d = snapshot.val();
         if(d) {
             var merged = false;
             for(var k in d) {
@@ -350,32 +338,27 @@ function loadProg() {
                     merged = true;
                 }
             }
+            // Note: We do NOT delete local entries missing from remote,
+            // so demo-before-login progress survives first-time sync.
             if(merged) saveProg();
         }
         renderMods();
         restoreState();
-    }).catch(function(){ renderMods(); restoreState(); });
-    // Listen for realtime changes (only once)
-    if(!_progSubscribed) {
-        _progSubscribed = true;
-        _supa.channel('progress-changes').on('postgres_changes', {
-            event: '*',
-            schema: 'public',
-            table: 'progress',
-            filter: 'uid=eq.'+_uid
-        }, function(payload) {
-            if(_syncing) return;
-            var d = payload.new && payload.new.data;
-            if(d && JSON.stringify(d) !== JSON.stringify(prog)) {
-                prog = d;
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(prog));
-                renderMods();
-            }
-        }).subscribe();
-    }
+    }).catch(function(){});
+    // Listen for realtime changes (skip our own writes)
+    var sp=syncPath();sp&&db.ref(sp).on("value", function(snapshot) {
+        if(_syncing) return;
+        var d = snapshot.val();
+        if(d && JSON.stringify(d) !== JSON.stringify(prog)) {
+            prog = d;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(prog));
+            renderMods();
+        }
+    });
 }
+
 loadProg();
-// Load today count from localStorage + Supabase sync
+// Load today count from localStorage + Firebase sync
 // Streak tracking
 function getTodayKey() {
     var td = new Date();
@@ -423,44 +406,37 @@ try {
         var el = document.getElementById('today-cnt');
         if(el) el.textContent = '今日: '+sd.n;
     }
-    // Sync from Supabase (higher count wins)
-    if(_uid) {
-        _supa.from('daily_stats').select('data').eq('uid',_uid).single().then(function(result) {
-            var fd = result.data && result.data.data;
-            if(fd && fd.d === tk && fd.n > (sd.n||0)) {
-                localStorage.setItem('y_stats', JSON.stringify(fd));
-                var el = document.getElementById('today-cnt');
-                if(el) el.textContent = '今日: '+fd.n;
-            }
-        }).catch(function(){});
-        // Real-time sync across devices
-        _supa.channel('stats-changes').on('postgres_changes', {
-            event: '*',
-            schema: 'public',
-            table: 'daily_stats',
-            filter: 'uid=eq.'+_uid
-        }, function(payload) {
-            try {
-                var fd = payload.new && payload.new.data;
-                var td2 = new Date(), tk2 = td2.getFullYear()+'-'+(td2.getMonth()+1)+'-'+td2.getDate();
-                if(fd && fd.d === tk2) {
-                    var cur = JSON.parse(localStorage.getItem('y_stats')||'{}');
-                    if(fd.n > (cur.n||0)) {
-                        localStorage.setItem('y_stats', JSON.stringify(fd));
-                        var el = document.getElementById('today-cnt');
-                        if(el) el.textContent = '今日: '+fd.n;
-                    }
+    // Sync from Firebase (higher count wins)
+    var sp=statsPath();sp&&db.ref(sp).once('value').then(function(sn) {
+        var fd = sn.val();
+        if(fd && fd.d === tk && fd.n > (sd.n||0)) {
+            localStorage.setItem('y_stats', JSON.stringify(fd));
+            var el = document.getElementById('today-cnt');
+            if(el) el.textContent = '今日: '+fd.n;
+        }
+    }).catch(function(){});
+    // Real-time sync across devices
+    var sp=statsPath();sp&&db.ref(sp).on('value', function(sn) {
+        try {
+            var fd = sn.val();
+            var td2 = new Date(), tk2 = td2.getFullYear()+'-'+(td2.getMonth()+1)+'-'+td2.getDate();
+            if(fd && fd.d === tk2) {
+                var cur = JSON.parse(localStorage.getItem('y_stats')||'{}');
+                if(fd.n > (cur.n||0)) {
+                    localStorage.setItem('y_stats', JSON.stringify(fd));
+                    var el = document.getElementById('today-cnt');
+                    if(el) el.textContent = '今日: '+fd.n;
                 }
-            } catch(e){}
-        }).subscribe();
-    }
+            }
+        } catch(e){}
+    });
 } catch(e){}
 
 
 // Auth functions
 var isDemo = false;
 function doLogout() {
-    if(!isDemo) { _supa.auth.signOut(); localStorage.removeItem("sb-iwpzcmmwtnvcphatrucd-auth-token"); }
+    if(!isDemo) { firebase.auth().signOut(); }
     isDemo = false;
     try { localStorage.removeItem("y_demo"); } catch(e){}
     document.getElementById("app").style.display = "none";
@@ -473,9 +449,7 @@ function demoLogin() {
     localStorage.setItem("y_demo", "1");
     document.getElementById("login-page").style.display = "none";
     document.getElementById("app").style.display = "";
-    if(!document.getElementById("demo-alert")) {
-        document.getElementById("app").insertAdjacentHTML("afterbegin", '<div id="demo-alert" class="alert alert-warning text-center py-1 mb-2" style="font-size:.8rem">⚠️ Demo 模式 · 清除缓存后数据会丢失</div>');
-    }
+    document.getElementById("app").insertAdjacentHTML("afterbegin", '<div class="alert alert-warning text-center py-1 mb-2" style="font-size:.8rem">⚠️ Demo 模式 · 清除缓存后数据会丢失</div>');
     loadProg();
 }
 function login() {
@@ -485,15 +459,11 @@ function login() {
     errDiv.classList.add("hide");
     document.getElementById("btn-login").disabled = true;
     document.getElementById("btn-login").textContent = "登录中...";
-    _supa.auth.signInWithPassword({email:email, password:pass}).then(function(res) {
-        if(res.error) throw res.error;
-        if(!res.data || !res.data.session || !res.data.session.user) throw new Error("登录失败，请检查账号密码");
-        _uid = res.data.session.user.id;
+    firebase.auth().signInWithEmailAndPassword(email, pass).then(function() {
         document.getElementById("login-page").style.display = "none";
         document.getElementById("app").style.display = "";
-        loadProg();
     }).catch(function(e) {
-        errDiv.textContent = "登录失败: " + (e.message || "请检查账号密码");
+        errDiv.textContent = "登录失败: " + e.message;
         errDiv.classList.remove("hide");
         document.getElementById("btn-login").disabled = false;
         document.getElementById("btn-login").textContent = "登录";
@@ -502,19 +472,15 @@ function login() {
 
 // Check auth state on load
 try { if(localStorage.getItem("y_demo") === "1") { isDemo = true; } } catch(e){}
-
-_supa.auth.onAuthStateChange(function(event, session) {
-    if(session) _uid = session.user.id;
-    if(session || isDemo) {
+firebase.auth().onAuthStateChanged(function(user) {
+    if(user) _uid = user.uid;
+    if(user || isDemo) {
         document.getElementById("login-page").style.display = "none";
         document.getElementById("app").style.display = "";
         if(isDemo) {
-            if(!document.getElementById("demo-alert")) {
-        document.getElementById("app").insertAdjacentHTML("afterbegin", '<div id="demo-alert" class="alert alert-warning text-center py-1 mb-2" style="font-size:.8rem">⚠️ Demo 模式 · 清除缓存后数据会丢失</div>');
-    }
+            document.getElementById("app").insertAdjacentHTML("afterbegin", '<div class="alert alert-warning text-center py-1 mb-2" style="font-size:.8rem">⚠️ Demo 模式 · 清除缓存后数据会丢失</div>');
         }
         loadProg();
-        loadDailyStats();
     } else {
         document.getElementById("login-page").style.display = "";
         document.getElementById("app").style.display = "none";
@@ -524,7 +490,7 @@ _supa.auth.onAuthStateChange(function(event, session) {
 
 // PWA
 if('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./service-worker.js');
+    navigator.serviceWorker.register('/service-worker.js');
 }
 var deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', function(e) {
@@ -858,18 +824,6 @@ function submitAns() {
     
     // Allow re-answering done cards
     
-    // Check if answer is empty
-    if(!isMulti) {
-        if(curCard.opts && curCard.opts.length) {
-            // Choice card: check if an option is selected
-            var _sel = document.querySelector("#opts-area input[type=radio]:checked");
-            if(!_sel) { _subBtn.disabled = false; return; }
-        } else {
-            // Text input card: check if input has value
-            var _ua = inp.value.trim();
-            if(!_ua) { _subBtn.disabled = false; return; }
-        }
-    }
     var correct = false;
     if(isMulti) {
         // Multi-field: check all fields
@@ -909,12 +863,12 @@ function submitAns() {
     
     if(correct) sessStats.ok++; else sessStats.no++;
     sessStats.tot++;
-        try {
+    try {
         var td = new Date(), tk = td.getFullYear()+'-'+(td.getMonth()+1)+'-'+td.getDate();
         var sd = JSON.parse(localStorage.getItem('y_stats')||'{}');
         if(sd.d !== tk) { sd = {d:tk, n:0}; }
         sd.n++; localStorage.setItem('y_stats', JSON.stringify(sd));
-        _supa.from("daily_stats").upsert({uid:_uid,data:sd},{onConflict:"uid"}).select().catch(function(e){console.log("UPSERT_ERR:",e.message)})
+        var sp=statsPath();sp&&db.ref(sp).set(sd).catch(function(){});
         var el = document.getElementById('today-cnt');
         if(el) el.textContent = '今日: '+sd.n;
     } catch(e){}
@@ -1011,83 +965,77 @@ function nextCard() { cardIdx++; showCard(); }
 function markEasy() {
     if(!curCard) return;
     var p = prog[curCard.i] || {};
-    p.m = true; p.i = 90 * 24; p.n = Date.now() + 90 * 86400000;
+    p.m = true; p.i = 90; p.n = Date.now()+90*86400000;
     prog[curCard.i] = p;
-    // Note: sessStats and today-cnt are already updated in submitAns()
-    // only update if not already counted (though in current UI flow it's always preceded by submitAns)
+    sessStats.ok++; sessStats.tot++;
+    try { var td=new Date(),tk=td.getFullYear()+"-"+(td.getMonth()+1)+"-"+td.getDate(); var sd=JSON.parse(localStorage.getItem("y_stats")||"{}"); if(sd.d!==tk){sd={d:tk,n:0};} sd.n++; localStorage.setItem("y_stats",JSON.stringify(sd)); var sp=statsPath(); sp&&db.ref(sp).set(sd).catch(function(){}); } catch(e){}
     saveProg(); cardIdx++; showCard();
 }
 
 function mark42() {
     if(!curCard) return;
     var p = prog[curCard.i] || {};
-    p.i = 42 * 24; p.n = Date.now() + 42 * 86400000; p.p42 = true;
+    p.i = 42; p.n = Date.now()+42*86400000; p.p42 = true;
     prog[curCard.i] = p;
-    // Note: sessStats and today-cnt are already updated in submitAns()
+    sessStats.ok++; sessStats.tot++;
+    try { var td=new Date(),tk=td.getFullYear()+"-"+(td.getMonth()+1)+"-"+td.getDate(); var sd=JSON.parse(localStorage.getItem("y_stats")||"{}"); if(sd.d!==tk){sd={d:tk,n:0};} sd.n++; localStorage.setItem("y_stats",JSON.stringify(sd)); var sp=statsPath(); sp&&db.ref(sp).set(sd).catch(function(){}); } catch(e){}
     saveProg(); cardIdx++; showCard();
 }
 
 var _studySkipTo = null;
-function startStudyAll() {
+var _studyDepth=0;function startStudyAll() {if(++_studyDepth>50){alert("全部学习完成！");_studySkipTo=null;_studyDepth=0;goHome();return;}
+    // Find current learning position: first module+section with un-mastered cards
     var now = Date.now();
     var curMi = -1, curSi = -1;
-    var found = false;
-
-    // Use a while loop to find the next section to study
-    while (!found) {
-        curMi = -1; curSi = -1;
-        for(var mi=0; mi<langData.length; mi++) {
-            for(var si=0; si<langData[mi].sections.length; si++) {
-                if(_studySkipTo && (mi < _studySkipTo.mi || (mi === _studySkipTo.mi && si < _studySkipTo.si))) continue;
-                if(_studySkipTo) _studySkipTo = null;
-                var sec = langData[mi].sections[si];
-                for(var ci=0; ci<sec.cards.length; ci++) {
-                    var p = prog[sec.cards[ci].i];
-                    if(!p || !p.m) { curMi = mi; curSi = si; break; }
-                }
-                if(curMi >= 0) break;
+    for(var mi=0; mi<langData.length; mi++) {
+        for(var si=0; si<langData[mi].sections.length; si++) {
+            if(_studySkipTo && (mi < _studySkipTo.mi || (mi === _studySkipTo.mi && si < _studySkipTo.si))) continue;
+            if(_studySkipTo) _studySkipTo = null;
+            var sec = langData[mi].sections[si];
+            for(var ci=0; ci<sec.cards.length; ci++) {
+                var p = prog[sec.cards[ci].i];
+                if(!p || !p.m) { curMi = mi; curSi = si; break; }
             }
             if(curMi >= 0) break;
         }
-
-        if(curMi < 0) { alert("全部学习完成！"); return; }
-
-        // Collect review cards from ALL earlier sections + current section
-        var reviewCards = [];
-        var newCards = [];
-        var typeOrder = ["dictation","dictationChinese","meaningChinese","word","multi","gender","plural","feminine","pastParticiple","isSeparable","presentTenseConjugation","pastTenseConjugation","konjunktivII","imperativ","comparativ","superlativ","phrase","custom","array","一般"];
-        
-        for(var mi=0; mi<=curMi; mi++) {
-            var maxSi = (mi === curMi) ? curSi : langData[mi].sections.length - 1;
-            for(var si=0; si<=maxSi; si++) {
-                var sec = langData[mi].sections[si];
-                for(var ci=0; ci<sec.cards.length; ci++) {
-                    var c = sec.cards[ci];
-                    var p = prog[c.i];
-                    if(p && p.m) continue;
-                    if(p && p.n && p.n < now) {
-                        reviewCards.push({card:c, modIdx:mi, secIdx:si});
-                    } else if(!p || (!p.r && !p.m)) {
-                        newCards.push({card:c, modIdx:mi, secIdx:si});
-                    }
+        if(curMi >= 0) break;
+    }
+    if(curMi < 0) { alert("\u5168\u90e8\u5b66\u4e60\u5b8c\u6210\uff01"); return; }
+    
+    // Collect review cards from ALL earlier sections + current section
+    var reviewCards = [];
+    var newCards = [];
+    var typeOrder = ["dictation","dictationChinese","meaningChinese","word","multi","gender","plural","feminine","pastParticiple","isSeparable","presentTenseConjugation","pastTenseConjugation","konjunktivII","imperativ","comparativ","superlativ","phrase","custom","array","\u4e00\u822c"];
+    
+    for(var mi=0; mi<=curMi; mi++) {
+        var maxSi = (mi === curMi) ? curSi : langData[mi].sections.length - 1;
+        for(var si=0; si<=maxSi; si++) {
+            var sec = langData[mi].sections[si];
+            for(var ci=0; ci<sec.cards.length; ci++) {
+                var c = sec.cards[ci];
+                var p = prog[c.i];
+                if(p && p.m) continue;
+                if(p && p.n && p.n < now) {
+                    reviewCards.push({card:c, modIdx:mi, secIdx:si});
+                } else if(!p || (!p.r && !p.m)) {
+                    newCards.push({card:c, modIdx:mi, secIdx:si});
                 }
             }
         }
-
-        if(reviewCards.length === 0 && newCards.length === 0) {
-            _studySkipTo = {mi: curMi, si: curSi + 1};
-            if(_studySkipTo.si >= langData[_studySkipTo.mi].sections.length) {
-                _studySkipTo.mi++; _studySkipTo.si = 0;
-            }
-            if(_studySkipTo.mi >= langData.length) {
-                alert("全部学习完成！");
-                _studySkipTo = null;
-                return;
-            }
-            // Loop will continue to find next available section
-        } else {
-            found = true;
+    }
+    
+    if(reviewCards.length === 0 && newCards.length === 0) {
+        _studySkipTo = {mi: curMi, si: curSi + 1};
+        if(_studySkipTo.si >= langData[_studySkipTo.mi].sections.length) {
+            _studySkipTo.mi++; _studySkipTo.si = 0;
         }
+        if(_studySkipTo.mi >= langData.length) {
+            alert("\u5168\u90e8\u5b66\u4e60\u5b8c\u6210\uff01");
+            _studySkipTo = null;
+            return;
+        }
+        startStudyAll();
+        return;
     }
     _studySkipTo = null;
     
@@ -1426,7 +1374,7 @@ document.addEventListener("keydown", function(e) {
 });
 
 // Init
-document.getElementById("btn-start-study").onclick = function(){startStudyAll();};
+document.getElementById("btn-start-study").onclick = function(){_studyDepth=0;startStudyAll();};
 switchLang(localStorage.getItem("y_lang")||"german");</script>
 <div style="text-align:center;font-size:.7rem;color:#aaa;padding:10px 0">© 2026 Michael.Liu</div>
 </body>

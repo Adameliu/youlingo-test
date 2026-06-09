@@ -1,12 +1,12 @@
 const CACHE = "youlingo-v3";
 const AUDIO_CACHE = "youlingo-audio-v1";
 const CACHE_ASSETS = [
-  "/",
-  "/index.html",
-  "/manifest.json",
-  "/favicon.svg",
-  "/icon-192.png",
-  "/icon-512.png"
+  "./",
+  "./index.html",
+  "./manifest.json",
+  "./favicon.svg",
+  "./icon-192.png",
+  "./icon-512.png"
 ];
 const AUDIO_CACHE_LIMIT = 500; // 最多缓存500个音频文件
 

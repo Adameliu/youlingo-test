@@ -32,7 +32,7 @@
 
 ### 数据流
 ```
-CSV 源文件 (sharplingo_deutsch_karten*.csv)
+CSV 源文件 (youlingo_deutsch_karten*.csv)
     ↓ [Python 处理脚本]
 modules/*.json (按模块组织的原始卡片)
     ↓ [编译合并]
@@ -188,7 +188,7 @@ interface Module {
 1. **音频文件** — 本地 `audio/` 目录和 Cloudflare R2 均有存储。`.gitignore` 忽略了 `audio/` 和 `modules/`，因为这些可以从数据文件重新生成。
 2. **Firebase 配置** — 如果更换 Firebase 项目，需要更新 `study_app.html` 中的 `firebaseConfig` 对象。
 3. **Demo 模式** — 仅用 localStorage，清除缓存会丢失进度。
-4. **旧 Key 迁移** — 代码中自动将旧 `sharplingo_progress_v2` 和旧 Firebase path `progress_v2` 迁移到新 key。
+4. **旧 Key 迁移** — 代码中自动将旧 `youlingo_progress_v2` 和旧 Firebase path `progress_v2` 迁移到新 key。
 5. **运行方式** — 直接双击 `study_app.html` 即可运行（需联网加载 Bootstrap/Firebase CDN）。
 
 ---
