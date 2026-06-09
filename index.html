@@ -443,8 +443,11 @@ function login() {
     document.getElementById("btn-login").textContent = "登录中...";
     _supa.auth.signInWithPassword({email:email, password:pass}).then(function(res) {
         if(res.error) throw res.error;
+        if(!res.data || !res.data.session || !res.data.session.user) throw new Error("登录失败，请检查账号密码");
+        _uid = res.data.session.user.id;
         document.getElementById("login-page").style.display = "none";
         document.getElementById("app").style.display = "";
+        loadProg();
     }).catch(function(e) {
         errDiv.textContent = "登录失败: " + (e.message || "请检查账号密码");
         errDiv.classList.remove("hide");
