@@ -909,12 +909,17 @@ function submitAns() {
     
     if(correct) sessStats.ok++; else sessStats.no++;
     sessStats.tot++;
-        try {
+    try {
         var td = new Date(), tk = td.getFullYear()+'-'+(td.getMonth()+1)+'-'+td.getDate();
         var sd = JSON.parse(localStorage.getItem('y_stats')||'{}');
-        if(sd.d !== tk) { sd = {d:tk, n:0}; }
-        sd.n++; localStorage.setItem('y_stats', JSON.stringify(sd));
-        _supa.from("daily_stats").upsert({uid:_uid,data:sd},{onConflict:"uid"}).select().catch(function(e){console.log("UPSERT_ERR:",e.message)})
+        if(sd.d !== tk) { sd = {d:tk, n:0, ids:[]}; }
+        if(!sd.ids) sd.ids = [];
+        if(sd.ids.indexOf(curCard.i) === -1) {
+            sd.ids.push(curCard.i);
+            sd.n = sd.ids.length;
+            localStorage.setItem('y_stats', JSON.stringify(sd));
+            _supa.from("daily_stats").upsert({uid:_uid,data:sd},{onConflict:"uid"}).select().catch(function(e){console.log("UPSERT_ERR:",e.message)});
+        }
         var el = document.getElementById('today-cnt');
         if(el) el.textContent = '今日: '+sd.n;
     } catch(e){}
