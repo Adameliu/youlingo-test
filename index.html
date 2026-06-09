@@ -7,9 +7,7 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="manifest" href="/manifest.json">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--primary:#17a2b8;--bg:#f0f2f5}
 body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0}
@@ -111,7 +109,7 @@ body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI
   </div>
   <button id="btn-login" class="btn btn-primary w-100 mb-2" onclick="login()">登录</button>
   <button class="btn btn-outline-success w-100" onclick="demoLogin()">🎮 Demo 体验（无需账号）</button>
-  <p class="text-center small text-muted mt-3">请输入 Firebase 账号，或点击 Demo</p>
+  <p class="text-center small text-muted mt-3">请输入账号，或点击 Demo</p>
 </div>
 
 <div class="container" id="app" style="display:none">
@@ -272,33 +270,20 @@ var prog = {};
 var _audio = null;
 var _cardShownAt = 0; // 卡片显示时间戳，用于判断答题速度
 
-// Firebase
-var firebaseConfig = {
-    apiKey: "AIzaSyAt62RyhvA6jOPxQKNfILis88f2N-KIAZ4",
-    authDomain: "youlingo-quiz.firebaseapp.com",
-    databaseURL: "https://youlingo-quiz-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "youlingo-quiz",
-    storageBucket: "youlingo-quiz.firebasestorage.app",
-    messagingSenderId: "643293722511",
-    appId: "1:643293722511:web:acf898422182e81c347dfa"
-};
-try { firebase.initializeApp(firebaseConfig); } catch(e) { showFatal('Firebase 初始化失败: '+e.message); }
-var db = null;
-try { db = firebase.database(); } catch(e) { showFatal('数据库连接失败: '+e.message); }
+// Supabase
+var _supa = supabase.createClient('https://iwpzcmmwtnvcphatrucd.supabase.co', 'sb_publishable_1DKV3HyHb9yf5riwUGNwLQ_99TA-F45');
 var _uid = null;
-function syncPath() { return _uid ? "progress/"+_uid : null; }
-function statsPath() { return _uid ? "daily_stats/"+_uid : null; }
 var R2_BASE = "https://pub-1c1a3bd3f4554dc4afce6c91070cf22e.r2.dev";
 
 var _saveTimer = null;
 var _syncing = false;
 function saveProg() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(prog));
-    if(isDemo) return;
+    if(isDemo || !_uid) return;
     if(_saveTimer) clearTimeout(_saveTimer);
     _saveTimer = setTimeout(function() {
         _syncing = true;
-        var sp=syncPath();if(sp)db.ref(sp).set(prog).then(function() { _syncing = false; }).catch(function() { _syncing = false; });
+        _supa.from('progress').upsert({uid:_uid, data:prog}, {onConflict:'uid'}).then(function(){_syncing=false;}).catch(function(){_syncing=false;});
     }, 300);
 }
 
@@ -314,22 +299,10 @@ function loadProg() {
     } catch(e){}
     try { var p = localStorage.getItem(STORAGE_KEY); if(p) prog = JSON.parse(p); } catch(e) {}
     if(isDemo) { renderMods(); return; }
-    // Migrate old progress_v2 to uid path
-    if(_uid) {
-        db.ref("progress_v2").once("value").then(function(snap) {
-            var old = snap.val();
-            if(old) {
-                var m = false;
-                for(var k in old) {
-                    if(!prog[k]||(old[k].n||0)>(prog[k].n||0)){prog[k]=old[k];m=true;}
-                }
-                if(m) { saveProg(); db.ref("progress_v2").remove(); }
-            }
-        }).catch(function(){});
-    }
-    // Sync from Firebase: merge remote into local, newer n wins
-    var sp=syncPath();sp&&db.ref(sp).once("value").then(function(snapshot) {
-        var d = snapshot.val();
+    if(!_uid) return;
+    // Load from Supabase
+    _supa.from('progress').select('data').eq('uid',_uid).single().then(function(result) {
+        var d = result.data && result.data.data;
         if(d) {
             var merged = false;
             for(var k in d) {
@@ -338,27 +311,29 @@ function loadProg() {
                     merged = true;
                 }
             }
-            // Note: We do NOT delete local entries missing from remote,
-            // so demo-before-login progress survives first-time sync.
             if(merged) saveProg();
         }
         renderMods();
         restoreState();
-    }).catch(function(){});
-    // Listen for realtime changes (skip our own writes)
-    var sp=syncPath();sp&&db.ref(sp).on("value", function(snapshot) {
+    }).catch(function(){ renderMods(); restoreState(); });
+    // Listen for realtime changes
+    _supa.channel('progress-changes').on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'progress',
+        filter: 'uid=eq.'+_uid
+    }, function(payload) {
         if(_syncing) return;
-        var d = snapshot.val();
+        var d = payload.new && payload.new.data;
         if(d && JSON.stringify(d) !== JSON.stringify(prog)) {
             prog = d;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(prog));
             renderMods();
         }
-    });
+    }).subscribe();
 }
-
 loadProg();
-// Load today count from localStorage + Firebase sync
+// Load today count from localStorage + Supabase sync
 // Streak tracking
 function getTodayKey() {
     var td = new Date();
@@ -406,37 +381,44 @@ try {
         var el = document.getElementById('today-cnt');
         if(el) el.textContent = '今日: '+sd.n;
     }
-    // Sync from Firebase (higher count wins)
-    var sp=statsPath();sp&&db.ref(sp).once('value').then(function(sn) {
-        var fd = sn.val();
-        if(fd && fd.d === tk && fd.n > (sd.n||0)) {
-            localStorage.setItem('y_stats', JSON.stringify(fd));
-            var el = document.getElementById('today-cnt');
-            if(el) el.textContent = '今日: '+fd.n;
-        }
-    }).catch(function(){});
-    // Real-time sync across devices
-    var sp=statsPath();sp&&db.ref(sp).on('value', function(sn) {
-        try {
-            var fd = sn.val();
-            var td2 = new Date(), tk2 = td2.getFullYear()+'-'+(td2.getMonth()+1)+'-'+td2.getDate();
-            if(fd && fd.d === tk2) {
-                var cur = JSON.parse(localStorage.getItem('y_stats')||'{}');
-                if(fd.n > (cur.n||0)) {
-                    localStorage.setItem('y_stats', JSON.stringify(fd));
-                    var el = document.getElementById('today-cnt');
-                    if(el) el.textContent = '今日: '+fd.n;
-                }
+    // Sync from Supabase (higher count wins)
+    if(_uid) {
+        _supa.from('daily_stats').select('data').eq('uid',_uid).single().then(function(result) {
+            var fd = result.data && result.data.data;
+            if(fd && fd.d === tk && fd.n > (sd.n||0)) {
+                localStorage.setItem('y_stats', JSON.stringify(fd));
+                var el = document.getElementById('today-cnt');
+                if(el) el.textContent = '今日: '+fd.n;
             }
-        } catch(e){}
-    });
+        }).catch(function(){});
+        // Real-time sync across devices
+        _supa.channel('stats-changes').on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'daily_stats',
+            filter: 'uid=eq.'+_uid
+        }, function(payload) {
+            try {
+                var fd = payload.new && payload.new.data;
+                var td2 = new Date(), tk2 = td2.getFullYear()+'-'+(td2.getMonth()+1)+'-'+td2.getDate();
+                if(fd && fd.d === tk2) {
+                    var cur = JSON.parse(localStorage.getItem('y_stats')||'{}');
+                    if(fd.n > (cur.n||0)) {
+                        localStorage.setItem('y_stats', JSON.stringify(fd));
+                        var el = document.getElementById('today-cnt');
+                        if(el) el.textContent = '今日: '+fd.n;
+                    }
+                }
+            } catch(e){}
+        }).subscribe();
+    }
 } catch(e){}
 
 
 // Auth functions
 var isDemo = false;
 function doLogout() {
-    if(!isDemo) { firebase.auth().signOut(); }
+    if(!isDemo) { _supa.auth.signOut(); }
     isDemo = false;
     try { localStorage.removeItem("y_demo"); } catch(e){}
     document.getElementById("app").style.display = "none";
@@ -459,7 +441,7 @@ function login() {
     errDiv.classList.add("hide");
     document.getElementById("btn-login").disabled = true;
     document.getElementById("btn-login").textContent = "登录中...";
-    firebase.auth().signInWithEmailAndPassword(email, pass).then(function() {
+    _supa.auth.signInWithPassword({email:email, password:pass}).then(function() {
         document.getElementById("login-page").style.display = "none";
         document.getElementById("app").style.display = "";
     }).catch(function(e) {
@@ -472,9 +454,9 @@ function login() {
 
 // Check auth state on load
 try { if(localStorage.getItem("y_demo") === "1") { isDemo = true; } } catch(e){}
-firebase.auth().onAuthStateChanged(function(user) {
-    if(user) _uid = user.uid;
-    if(user || isDemo) {
+_supa.auth.onAuthStateChange(function(event, session) {
+    if(session) _uid = session.user.id;
+    if(session || isDemo) {
         document.getElementById("login-page").style.display = "none";
         document.getElementById("app").style.display = "";
         if(isDemo) {
@@ -868,7 +850,7 @@ function submitAns() {
         var sd = JSON.parse(localStorage.getItem('y_stats')||'{}');
         if(sd.d !== tk) { sd = {d:tk, n:0}; }
         sd.n++; localStorage.setItem('y_stats', JSON.stringify(sd));
-        var sp=statsPath();sp&&db.ref(sp).set(sd).catch(function(){});
+        _supa.from('daily_stats').upsert({uid:_uid,data:sd},{onConflict:'uid'}).catch(function(){});
         var el = document.getElementById('today-cnt');
         if(el) el.textContent = '今日: '+sd.n;
     } catch(e){}
@@ -968,7 +950,7 @@ function markEasy() {
     p.m = true; p.i = 90; p.n = Date.now()+90*86400000;
     prog[curCard.i] = p;
     sessStats.ok++; sessStats.tot++;
-    try { var td=new Date(),tk=td.getFullYear()+"-"+(td.getMonth()+1)+"-"+td.getDate(); var sd=JSON.parse(localStorage.getItem("y_stats")||"{}"); if(sd.d!==tk){sd={d:tk,n:0};} sd.n++; localStorage.setItem("y_stats",JSON.stringify(sd)); var sp=statsPath(); sp&&db.ref(sp).set(sd).catch(function(){}); } catch(e){}
+    try { var td=new Date(),tk=td.getFullYear()+"-"+(td.getMonth()+1)+"-"+td.getDate(); var sd=JSON.parse(localStorage.getItem("y_stats")||"{}"); if(sd.d!==tk){sd={d:tk,n:0};} sd.n++; localStorage.setItem("y_stats",JSON.stringify(sd)); _supa.from('daily_stats').upsert({uid:_uid,data:sd},{onConflict:'uid'}).catch(function(){}); } catch(e){}
     saveProg(); cardIdx++; showCard();
 }
 
@@ -978,7 +960,7 @@ function mark42() {
     p.i = 42; p.n = Date.now()+42*86400000; p.p42 = true;
     prog[curCard.i] = p;
     sessStats.ok++; sessStats.tot++;
-    try { var td=new Date(),tk=td.getFullYear()+"-"+(td.getMonth()+1)+"-"+td.getDate(); var sd=JSON.parse(localStorage.getItem("y_stats")||"{}"); if(sd.d!==tk){sd={d:tk,n:0};} sd.n++; localStorage.setItem("y_stats",JSON.stringify(sd)); var sp=statsPath(); sp&&db.ref(sp).set(sd).catch(function(){}); } catch(e){}
+    try { var td=new Date(),tk=td.getFullYear()+"-"+(td.getMonth()+1)+"-"+td.getDate(); var sd=JSON.parse(localStorage.getItem("y_stats")||"{}"); if(sd.d!==tk){sd={d:tk,n:0};} sd.n++; localStorage.setItem("y_stats",JSON.stringify(sd)); _supa.from('daily_stats').upsert({uid:_uid,data:sd},{onConflict:'uid'}).catch(function(){}); } catch(e){}
     saveProg(); cardIdx++; showCard();
 }
 
