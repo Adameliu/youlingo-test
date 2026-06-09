@@ -371,15 +371,6 @@ function loadDailyStats() {
 var _progSubscribed = false;
 var _statsSubscribed = false;
 function loadProg() {
-    // Migrate old storage key
-    try {
-        var oldKey = "youlingo_progress_v2";
-        var oldData = localStorage.getItem(oldKey);
-        if(oldData && !localStorage.getItem(STORAGE_KEY)) {
-            localStorage.setItem(STORAGE_KEY, oldData);
-        }
-        localStorage.removeItem(oldKey);
-    } catch(e){}
     try { var p = localStorage.getItem(STORAGE_KEY); if(p) prog = JSON.parse(p); } catch(e) {}
     if(isDemo) { renderMods(); refreshStatsDisplay(); return; }
     if(!_uid) return;
