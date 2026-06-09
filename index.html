@@ -290,37 +290,37 @@ function saveProg() {
 function loadDailyStats() {
     if(!_uid) return;
     try {
-        var sd = JSON.parse(localStorage.getItem("y_stats")||"{}");
         var td = new Date(), tk = td.getFullYear()+"-"+(td.getMonth()+1)+"-"+td.getDate();
         _supa.from("daily_stats").select("data").eq("uid",_uid).maybeSingle().then(function(result) {
-                        var fd = result.data && result.data.data;
-            if(fd && fd.d === tk && fd.n > (sd.n||0)) {
-                localStorage.setItem("y_stats", JSON.stringify(fd));
-                var el = document.getElementById("today-cnt");
-                if(el) el.textContent = "今日: "+fd.n;
+            var fd = result.data && result.data.data;
+            if(fd && fd.d === tk) {
+                var sd = JSON.parse(localStorage.getItem("y_stats")||"{}");
+                if(fd.n > (sd.n||0)) {
+                    localStorage.setItem("y_stats", JSON.stringify(fd));
+                    refreshStatsDisplay();
+                }
             }
         }).catch(function(e){console.log("LOAD_STATS_ERR:",e.message)});
         if(!_statsSubscribed) {
-        _statsSubscribed = true;
-        _supa.channel("stats-changes").on("postgres_changes", {
-            event: "*",
-            schema: "public",
-            table: "daily_stats",
-            filter: "uid=eq."+_uid
-        }, function(payload) {
-            try {
-                var fd = payload.new && payload.new.data;
-                var td2 = new Date(), tk2 = td2.getFullYear()+"-"+(td2.getMonth()+1)+"-"+td2.getDate();
-                if(fd && fd.d === tk2) {
-                    var cur = JSON.parse(localStorage.getItem("y_stats")||"{}");
-                    if(fd.n > (cur.n||0)) {
-                        localStorage.setItem("y_stats", JSON.stringify(fd));
-                        var el = document.getElementById("today-cnt");
-                        if(el) el.textContent = "今日: "+fd.n;
+            _statsSubscribed = true;
+            _supa.channel("stats-changes").on("postgres_changes", {
+                event: "*",
+                schema: "public",
+                table: "daily_stats",
+                filter: "uid=eq."+_uid
+            }, function(payload) {
+                try {
+                    var fd = payload.new && payload.new.data;
+                    var td2 = new Date(), tk2 = td2.getFullYear()+"-"+(td2.getMonth()+1)+"-"+td2.getDate();
+                    if(fd && fd.d === tk2) {
+                        var cur = JSON.parse(localStorage.getItem("y_stats")||"{}");
+                        if(fd.n > (cur.n||0)) {
+                            localStorage.setItem("y_stats", JSON.stringify(fd));
+                            refreshStatsDisplay();
+                        }
                     }
-                }
-            } catch(e){}
-        }).subscribe();
+                } catch(e){}
+            }).subscribe();
         }
     } catch(e){}
 }
@@ -416,45 +416,6 @@ try {
 } catch(e){}
 // Update streak when user studies (called from submitAns)
 function onStudyComplete() { updateStreak(); }
-try {
-    var sd = JSON.parse(localStorage.getItem('y_stats')||'{}');
-    var td = new Date(), tk = td.getFullYear()+'-'+(td.getMonth()+1)+'-'+td.getDate();
-    if(sd.d === tk) {
-        var el = document.getElementById('today-cnt');
-        if(el) el.textContent = '今日: '+sd.n;
-    }
-    // Sync from Supabase (higher count wins)
-    if(_uid) {
-        _supa.from('daily_stats').select('data').eq('uid',_uid).single().then(function(result) {
-            var fd = result.data && result.data.data;
-            if(fd && fd.d === tk && fd.n > (sd.n||0)) {
-                localStorage.setItem('y_stats', JSON.stringify(fd));
-                var el = document.getElementById('today-cnt');
-                if(el) el.textContent = '今日: '+fd.n;
-            }
-        }).catch(function(){});
-        // Real-time sync across devices
-        _supa.channel('stats-changes').on('postgres_changes', {
-            event: '*',
-            schema: 'public',
-            table: 'daily_stats',
-            filter: 'uid=eq.'+_uid
-        }, function(payload) {
-            try {
-                var fd = payload.new && payload.new.data;
-                var td2 = new Date(), tk2 = td2.getFullYear()+'-'+(td2.getMonth()+1)+'-'+td2.getDate();
-                if(fd && fd.d === tk2) {
-                    var cur = JSON.parse(localStorage.getItem('y_stats')||'{}');
-                    if(fd.n > (cur.n||0)) {
-                        localStorage.setItem('y_stats', JSON.stringify(fd));
-                        var el = document.getElementById('today-cnt');
-                        if(el) el.textContent = '今日: '+fd.n;
-                    }
-                }
-            } catch(e){}
-        }).subscribe();
-    }
-} catch(e){}
 
 
 // Auth functions
@@ -920,8 +881,6 @@ function submitAns() {
             localStorage.setItem('y_stats', JSON.stringify(sd));
             _supa.from("daily_stats").upsert({uid:_uid,data:sd},{onConflict:"uid"}).select().catch(function(e){console.log("UPSERT_ERR:",e.message)});
         }
-        var el = document.getElementById('today-cnt');
-        if(el) el.textContent = '今日: '+sd.n;
     } catch(e){}
     if(correct) {
         if(!isMulti) inp.disabled = true;
@@ -1008,14 +967,7 @@ function submitAns() {
         prog[curCard.i] = p;
     }
     saveProg();
-    try {
-        var s = JSON.parse(localStorage.getItem("y_stats")||"{}");
-        var t = new Date(), k = t.getFullYear()+"-"+(t.getMonth()+1)+"-"+t.getDate();
-        if(s.d === k) {
-            var el = document.getElementById("today-cnt");
-            if(el) el.textContent = "今日: " + (s.n || 0);
-        }
-    } catch(e){}
+    refreshStatsDisplay();
     onStudyComplete(); // 更新连续打卡
 }
 function nextCard() { cardIdx++; showCard(); }
@@ -1025,9 +977,9 @@ function markEasy() {
     var p = prog[curCard.i] || {};
     p.m = true; p.i = 90 * 24; p.n = Date.now() + 90 * 86400000;
     prog[curCard.i] = p;
-    // Note: sessStats and today-cnt are already updated in submitAns()
-    // only update if not already counted (though in current UI flow it's always preceded by submitAns)
-    saveProg(); cardIdx++; showCard();
+    saveProg();
+    refreshStatsDisplay();
+    cardIdx++; showCard();
 }
 
 function mark42() {
@@ -1035,8 +987,9 @@ function mark42() {
     var p = prog[curCard.i] || {};
     p.i = 42 * 24; p.n = Date.now() + 42 * 86400000; p.p42 = true;
     prog[curCard.i] = p;
-    // Note: sessStats and today-cnt are already updated in submitAns()
-    saveProg(); cardIdx++; showCard();
+    saveProg();
+    refreshStatsDisplay();
+    cardIdx++; showCard();
 }
 
 var _studySkipTo = null;
@@ -1245,10 +1198,14 @@ function updateTodayCnt() {
     try {
         var sd = JSON.parse(localStorage.getItem('y_stats')||'{}');
         var td = new Date(), tk = td.getFullYear()+'-'+(td.getMonth()+1)+'-'+td.getDate();
-        var n = sd.d === tk ? sd.n : sessStats.tot;
+        var n = (sd.d === tk) ? (sd.n || 0) : 0;
         var el = document.getElementById('today-cnt');
-        if(el) el.textContent = '\u4eca\u65e5: '+Math.max(n, sessStats.tot);
+        if(el) el.textContent = '今日: ' + n;
     } catch(e){}
+}
+function refreshStatsDisplay() {
+    updateTodayCnt();
+    updateReviewCount();
 }
 function renderMods() {
     updateReviewCount();
