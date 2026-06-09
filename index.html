@@ -911,7 +911,7 @@ function submitAns() {
         var sd = JSON.parse(localStorage.getItem('y_stats')||'{}');
         if(sd.d !== tk) { sd = {d:tk, n:0}; }
         sd.n++; localStorage.setItem('y_stats', JSON.stringify(sd));
-        _supa.from('daily_stats').upsert({uid:_uid,data:sd},{onConflict:'uid'}).then(function(r){console.log("STATS:",r.error?"ERR:"+JSON.stringify(r.error):"OK")}).catch(function(e){console.log("STATS_NET:",e.message)});
+        console.log("BEFORE_UPSERT_CALL"); try { _supa.from("daily_stats").upsert({uid:_uid,data:sd},{onConflict:"uid"}).then(function(r){console.log("UPSERT_OK:",JSON.stringify(r))}).catch(function(e){console.log("UPSERT_ERR:",e.message)}); } catch(e2) { console.log("UPSERT_CATCH:", e2.message); }
         var el = document.getElementById('today-cnt');
         if(el) el.textContent = '今日: '+sd.n;
     } catch(e){}
