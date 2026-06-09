@@ -322,6 +322,9 @@ function handleRemoteStats(fd) {
             cur.n = mergedIds.length;
             localStorage.setItem("y_stats", JSON.stringify(cur));
             refreshStatsDisplay();
+        } else if (remoteIds.length > 0 && cur.n === 0) {
+            // Edge case: UI says 0, but remote has data and we just merged it or already had it
+            refreshStatsDisplay();
         }
         
         if(needsPush) {
@@ -350,7 +353,9 @@ function loadDailyStats() {
         }
 
         _supa.from("daily_stats").select("data").eq("uid",_uid).maybeSingle().then(function(result) {
-            handleRemoteStats(result.data && result.data.data);
+            if(result.data && result.data.data) {
+                handleRemoteStats(result.data.data);
+            }
             refreshStatsDisplay();
         }).catch(function(e){
             console.log("LOAD_STATS_ERR:",e.message);
@@ -366,7 +371,9 @@ function loadDailyStats() {
                 filter: "uid=eq."+_uid
             }, function(payload) {
                 try {
-                    handleRemoteStats(payload.new && payload.new.data);
+                    if(payload.new && payload.new.data) {
+                        handleRemoteStats(payload.new.data);
+                    }
                 } catch(e){}
             }).subscribe();
         }
