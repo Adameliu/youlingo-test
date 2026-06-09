@@ -293,14 +293,21 @@ function loadDailyStats() {
         var td = new Date(), tk = td.getFullYear()+"-"+(td.getMonth()+1)+"-"+td.getDate();
         _supa.from("daily_stats").select("data").eq("uid",_uid).maybeSingle().then(function(result) {
             var fd = result.data && result.data.data;
-            if(fd && fd.d === tk) {
-                var sd = JSON.parse(localStorage.getItem("y_stats")||"{}");
-                if(fd.n > (sd.n||0)) {
+            var sd = JSON.parse(localStorage.getItem("y_stats")||"{}");
+            if(fd) {
+                // If remote data is for today and has more info, or if local data is for an old day
+                if((fd.d === tk && (fd.n || 0) > (sd.n || 0)) || (sd.d !== tk)) {
                     localStorage.setItem("y_stats", JSON.stringify(fd));
-                    refreshStatsDisplay();
                 }
+            } else if(sd.d !== tk) {
+                // Remote has no data, and local is old: clear local for the new day
+                localStorage.setItem("y_stats", JSON.stringify({d:tk, n:0, ids:[]}));
             }
-        }).catch(function(e){console.log("LOAD_STATS_ERR:",e.message)});
+            refreshStatsDisplay();
+        }).catch(function(e){
+            console.log("LOAD_STATS_ERR:",e.message);
+            refreshStatsDisplay();
+        });
         if(!_statsSubscribed) {
             _statsSubscribed = true;
             _supa.channel("stats-changes").on("postgres_changes", {
@@ -312,9 +319,9 @@ function loadDailyStats() {
                 try {
                     var fd = payload.new && payload.new.data;
                     var td2 = new Date(), tk2 = td2.getFullYear()+"-"+(td2.getMonth()+1)+"-"+td2.getDate();
-                    if(fd && fd.d === tk2) {
+                    if(fd) {
                         var cur = JSON.parse(localStorage.getItem("y_stats")||"{}");
-                        if(fd.n > (cur.n||0)) {
+                        if((fd.d === tk2 && fd.n > (cur.n||0)) || (cur.d !== tk2)) {
                             localStorage.setItem("y_stats", JSON.stringify(fd));
                             refreshStatsDisplay();
                         }
@@ -337,7 +344,7 @@ function loadProg() {
         localStorage.removeItem(oldKey);
     } catch(e){}
     try { var p = localStorage.getItem(STORAGE_KEY); if(p) prog = JSON.parse(p); } catch(e) {}
-    if(isDemo) { renderMods(); return; }
+    if(isDemo) { renderMods(); refreshStatsDisplay(); return; }
     if(!_uid) return;
     // Load from Supabase
     _supa.from('progress').select('data').eq('uid',_uid).maybeSingle().then(function(result) {
@@ -350,11 +357,12 @@ function loadProg() {
                     merged = true;
                 }
             }
-            if(merged) saveProg();
+            if(merged) localStorage.setItem(STORAGE_KEY, JSON.stringify(prog));
         }
         renderMods();
+        refreshStatsDisplay();
         restoreState();
-    }).catch(function(){ renderMods(); restoreState(); });
+    }).catch(function(){ renderMods(); refreshStatsDisplay(); restoreState(); });
     // Listen for realtime changes (only once)
     if(!_progSubscribed) {
         _progSubscribed = true;
@@ -370,6 +378,7 @@ function loadProg() {
                 prog = d;
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(prog));
                 renderMods();
+                refreshStatsDisplay();
             }
         }).subscribe();
     }
