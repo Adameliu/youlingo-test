@@ -25,7 +25,8 @@
   --text-muted: #afafaf;
   --border: #e5e5e5;
 }
-body { background: var(--bg); font-family: 'Nunito', system-ui, -apple-system, sans-serif; color: var(--text-main); margin: 0; }
+*, *::before, *::after { box-sizing: border-box; }
+body { background: var(--bg); font-family: 'Nunito', system-ui, -apple-system, sans-serif; color: var(--text-main); margin: 0; overflow-y: scroll; }
 .container { max-width: 720px; margin: 0 auto; padding: 15px; }
 .navbar { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; border-bottom: 2px solid var(--border); }
 .grid-3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 16px; }
