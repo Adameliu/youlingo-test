@@ -287,18 +287,26 @@ function saveProg() {
     }, 300);
 }
 
+// Helper to get consistent date key (YYYY-MM-DD)
+function getTodayDateStr() {
+    var d = new Date();
+    var month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+    return [year, month, day].join('-');
+}
+
 function loadDailyStats() {
+    var tk = getTodayDateStr();
     if(!_uid) {
-        // Even for logged out/demo users, ensure today's display is correct
+        var sd = JSON.parse(localStorage.getItem("y_stats")||"{}");
+        if(sd.d !== tk) localStorage.setItem("y_stats", JSON.stringify({d:tk, n:0, ids:[]}));
         refreshStatsDisplay();
         return;
     }
     try {
-        var td = new Date(), tk = td.getFullYear()+"-"+(td.getMonth()+1)+"-"+td.getDate();
         var sd = JSON.parse(localStorage.getItem("y_stats")||"{}");
-        
-        // Initial cleanup: if local data is from a different day, clear it immediately
-        if(sd.d && sd.d !== tk) {
+        if(sd.d !== tk) {
             sd = {d:tk, n:0, ids:[]};
             localStorage.setItem("y_stats", JSON.stringify(sd));
         }
@@ -307,18 +315,25 @@ function loadDailyStats() {
             var fd = result.data && result.data.data;
             var current_sd = JSON.parse(localStorage.getItem("y_stats")||"{}");
             
-            if(fd) {
-                if(fd.d === tk) {
-                    // Remote data is for today: take it if it has more cards
-                    if((fd.n || 0) > (current_sd.n || 0)) {
-                        localStorage.setItem("y_stats", JSON.stringify(fd));
-                    }
-                } else {
-                    // Remote data is old: current day should be 0
-                    if(current_sd.d !== tk) {
-                        localStorage.setItem("y_stats", JSON.stringify({d:tk, n:0, ids:[]}));
+            if(fd && fd.d === tk) {
+                // Merge IDs from remote if it's the same day
+                var mergedIds = current_sd.ids || [];
+                var remoteIds = fd.ids || [];
+                var changed = false;
+                for(var i=0; i<remoteIds.length; i++) {
+                    if(mergedIds.indexOf(remoteIds[i]) === -1) {
+                        mergedIds.push(remoteIds[i]);
+                        changed = true;
                     }
                 }
+                if(changed || current_sd.n !== mergedIds.length) {
+                    current_sd.ids = mergedIds;
+                    current_sd.n = mergedIds.length;
+                    localStorage.setItem("y_stats", JSON.stringify(current_sd));
+                }
+            } else if (fd && fd.d !== tk) {
+                // Remote is old, push our local (possibly fresh) today state to remote
+                _supa.from("daily_stats").upsert({uid:_uid, data:current_sd}, {onConflict:'uid'}).select().catch(function(){});
             }
             refreshStatsDisplay();
         }).catch(function(e){
@@ -336,18 +351,17 @@ function loadDailyStats() {
             }, function(payload) {
                 try {
                     var fd = payload.new && payload.new.data;
-                    var td2 = new Date(), tk2 = td2.getFullYear()+"-"+(td2.getMonth()+1)+"-"+td2.getDate();
-                    if(fd) {
+                    var today = getTodayDateStr();
+                    if(fd && fd.d === today) {
                         var cur = JSON.parse(localStorage.getItem("y_stats")||"{}");
-                        // Only sync if remote date is today and has more progress
-                        if(fd.d === tk2 && fd.n > (cur.n||0)) {
+                        if(fd.n > (cur.n||0)) {
                             localStorage.setItem("y_stats", JSON.stringify(fd));
                             refreshStatsDisplay();
-                        } else if (cur.d !== tk2) {
-                            // Local date is wrong, sync to remote or reset
-                            localStorage.setItem("y_stats", JSON.stringify(fd.d === tk2 ? fd : {d:tk2, n:0, ids:[]}));
-                            refreshStatsDisplay();
                         }
+                    } else if (fd && fd.d !== today) {
+                        // If remote was reset to a new day elsewhere
+                        localStorage.setItem("y_stats", JSON.stringify({d:today, n:0, ids:[]}));
+                        refreshStatsDisplay();
                     }
                 } catch(e){}
             }).subscribe();
@@ -410,12 +424,14 @@ loadProg();
 // Load today count from localStorage + Supabase sync
 // Streak tracking
 function getTodayKey() {
-    var td = new Date();
-    return td.getFullYear()+'-'+(td.getMonth()+1)+'-'+td.getDate();
+    return getTodayDateStr();
 }
 function getYesterdayKey() {
     var yd = new Date(Date.now() - 86400000);
-    return yd.getFullYear()+'-'+(yd.getMonth()+1)+'-'+yd.getDate();
+    var month = '' + (yd.getMonth() + 1), day = '' + yd.getDate(), year = yd.getFullYear();
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+    return [year, month, day].join('-');
 }
 function updateStreak() {
     try {
@@ -903,7 +919,7 @@ function submitAns() {
     if(correct) sessStats.ok++; else sessStats.no++;
     sessStats.tot++;
     try {
-        var td = new Date(), tk = td.getFullYear()+'-'+(td.getMonth()+1)+'-'+td.getDate();
+        var tk = getTodayDateStr();
         var sd = JSON.parse(localStorage.getItem('y_stats')||'{}');
         if(sd.d !== tk) { sd = {d:tk, n:0, ids:[]}; }
         if(!sd.ids) sd.ids = [];
@@ -1229,7 +1245,7 @@ function updateReviewCount() {
 function updateTodayCnt() {
     try {
         var sd = JSON.parse(localStorage.getItem('y_stats')||'{}');
-        var td = new Date(), tk = td.getFullYear()+'-'+(td.getMonth()+1)+'-'+td.getDate();
+        var tk = getTodayDateStr();
         var n = (sd.d === tk) ? (sd.n || 0) : 0;
         var el = document.getElementById('today-cnt');
         if(el) el.textContent = '今日: ' + n;
