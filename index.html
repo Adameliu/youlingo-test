@@ -452,7 +452,7 @@ try {
 // Auth functions
 var isDemo = false;
 function doLogout() {
-    if(!isDemo) { _supa.auth.signOut(); }
+    if(!isDemo) { _supa.auth.signOut(); localStorage.removeItem("sb-iwpzcmmwtnvcphatrucd-auth-token"); }
     isDemo = false;
     try { localStorage.removeItem("y_demo"); } catch(e){}
     document.getElementById("app").style.display = "none";
@@ -492,6 +492,8 @@ function login() {
 
 // Check auth state on load
 try { if(localStorage.getItem("y_demo") === "1") { isDemo = true; } } catch(e){}
+// Clear any stale Supabase session from previous sessions
+_supa.auth.getSession().then(function(res){ if(!res.data.session && !isDemo) { localStorage.removeItem("sb-iwpzcmmwtnvcphatrucd-auth-token"); } }).catch(function(){});
 _supa.auth.onAuthStateChange(function(event, session) {
     if(session) _uid = session.user.id;
     if(session || isDemo) {
@@ -890,6 +892,7 @@ function submitAns() {
         if(sd.d !== tk) { sd = {d:tk, n:0}; }
         sd.n++; localStorage.setItem('y_stats', JSON.stringify(sd));
         _supa.from('daily_stats').upsert({uid:_uid,data:sd},{onConflict:'uid'}).catch(function(){});
+        console.log("DEBUG today-cnt: sd.n=" + sd.n + " uid=" + _uid + " el=" + !!document.getElementById("today-cnt"));
         var el = document.getElementById('today-cnt');
         if(el) el.textContent = '今日: '+sd.n;
     } catch(e){}
