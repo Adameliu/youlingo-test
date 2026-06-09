@@ -938,7 +938,7 @@ function submitAns() {
             sd.ids.push(curCard.i);
             sd.n = sd.ids.length;
             localStorage.setItem('y_stats', JSON.stringify(sd));
-            _supa.from("daily_stats").upsert({uid:_uid,data:sd},{onConflict:"uid"}).select().catch(function(e){console.log("UPSERT_ERR:",e.message)});
+            _supa.from("daily_stats").upsert({uid:_uid,data:sd},{onConflict:"uid"}).select().catch(function(e){});
         }
     } catch(e){}
     if(correct) {
