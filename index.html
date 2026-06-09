@@ -304,32 +304,41 @@ function handleRemoteStats(fd) {
     if(cur.d !== today) { cur = {d:today, n:0, ids:[]}; }
 
     if(fd.d === today) {
-        var mergedIds = cur.ids || [];
-        var remoteIds = fd.ids || [];
-        var changedLocal = false;
-        
-        for(var i=0; i<remoteIds.length; i++) {
-            if(mergedIds.indexOf(remoteIds[i]) === -1) {
-                mergedIds.push(remoteIds[i]);
-                changedLocal = true;
+        if (!fd.ids && fd.n > 0) {
+            // Legacy/migrated data without IDs
+            if (cur.n < fd.n) {
+                cur.n = fd.n;
+                cur.ids = cur.ids || [];
+                localStorage.setItem("y_stats", JSON.stringify(cur));
+            }
+        } else {
+            var mergedIds = cur.ids || [];
+            var remoteIds = fd.ids || [];
+            var changedLocal = false;
+            
+            for(var i=0; i<remoteIds.length; i++) {
+                if(mergedIds.indexOf(remoteIds[i]) === -1) {
+                    mergedIds.push(remoteIds[i]);
+                    changedLocal = true;
+                }
+            }
+            
+            var needsPush = mergedIds.length > remoteIds.length;
+
+            if(changedLocal || cur.n !== mergedIds.length) {
+                cur.ids = mergedIds;
+                cur.n = Math.max(cur.n || 0, mergedIds.length);
+                localStorage.setItem("y_stats", JSON.stringify(cur));
+            }
+            
+            if(needsPush) {
+                _supa.from("daily_stats").upsert({uid:_uid, data:cur}, {onConflict:"uid"}).select().catch(function(){});
             }
         }
         
-        var needsPush = mergedIds.length > remoteIds.length;
-
-        if(changedLocal || cur.n !== mergedIds.length) {
-            cur.ids = mergedIds;
-            cur.n = mergedIds.length;
-            localStorage.setItem("y_stats", JSON.stringify(cur));
-            refreshStatsDisplay();
-        } else if (remoteIds.length > 0 && cur.n === 0) {
-            // Edge case: UI says 0, but remote has data and we just merged it or already had it
-            refreshStatsDisplay();
-        }
+        // ALWAYS refresh UI on incoming current-day data to handle same-browser multi-tab sync
+        refreshStatsDisplay();
         
-        if(needsPush) {
-            _supa.from("daily_stats").upsert({uid:_uid, data:cur}, {onConflict:"uid"}).select().catch(function(){});
-        }
     } else if (fd.d !== today) {
          if(cur.n > 0) {
              _supa.from("daily_stats").upsert({uid:_uid, data:cur}, {onConflict:"uid"}).select().catch(function(){});
