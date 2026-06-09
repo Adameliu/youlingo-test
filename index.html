@@ -854,12 +854,16 @@ function submitAns() {
     
     // Allow re-answering done cards
     
-    // Check if answer is empty (not multi-field)
-    if(!isMulti && !curCard.opts) {
-        var _ua = inp.value.trim();
-        if(!_ua) {
-            _subBtn.disabled = false;
-            return;
+    // Check if answer is empty
+    if(!isMulti) {
+        if(curCard.opts && curCard.opts.length) {
+            // Choice card: check if an option is selected
+            var _sel = document.querySelector("#opts-area input[type=radio]:checked");
+            if(!_sel) { _subBtn.disabled = false; return; }
+        } else {
+            // Text input card: check if input has value
+            var _ua = inp.value.trim();
+            if(!_ua) { _subBtn.disabled = false; return; }
         }
     }
     var correct = false;
