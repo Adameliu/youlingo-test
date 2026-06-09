@@ -905,6 +905,7 @@ function submitAns() {
     
     if(correct) sessStats.ok++; else sessStats.no++;
     sessStats.tot++;
+    console.log("SUBMIT_TOT:", sessStats.tot, "uid:", _uid, "supa:", !!_supa);
     try {
         var td = new Date(), tk = td.getFullYear()+'-'+(td.getMonth()+1)+'-'+td.getDate();
         var sd = JSON.parse(localStorage.getItem('y_stats')||'{}');
