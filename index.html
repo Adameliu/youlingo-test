@@ -1008,7 +1008,14 @@ function submitAns() {
         prog[curCard.i] = p;
     }
     saveProg();
-    document.getElementById("today-cnt").textContent="今日: "+(function(){try{var s=JSON.parse(localStorage.getItem("y_stats")||"{}");var t=new Date(),k=t.getFullYear()+"-"+(t.getMonth()+1)+"-"+(t.getDate());return Math.max(sessStats.tot,s.d===k?(s.n||0):0);}catch(e){return sessStats.tot;}})();
+    try {
+        var s = JSON.parse(localStorage.getItem("y_stats")||"{}");
+        var t = new Date(), k = t.getFullYear()+"-"+(t.getMonth()+1)+"-"+t.getDate();
+        if(s.d === k) {
+            var el = document.getElementById("today-cnt");
+            if(el) el.textContent = "今日: " + (s.n || 0);
+        }
+    } catch(e){}
     onStudyComplete(); // 更新连续打卡
 }
 function nextCard() { cardIdx++; showCard(); }
