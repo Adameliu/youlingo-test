@@ -292,7 +292,7 @@ function loadDailyStats() {
     try {
         var sd = JSON.parse(localStorage.getItem("y_stats")||"{}");
         var td = new Date(), tk = td.getFullYear()+"-"+(td.getMonth()+1)+"-"+td.getDate();
-        _supa.from("daily_stats").select("data").eq("uid",_uid).maybeSingle().then(function(result) { console.log("LOAD_STATS:", result.error ? "ERR:"+result.error.message : (result.data?"OK":"EMPTY"));
+        _supa.from("daily_stats").select("data").eq("uid",_uid).maybeSingle().then(function(result) {
                         var fd = result.data && result.data.data;
             if(fd && fd.d === tk && fd.n > (sd.n||0)) {
                 localStorage.setItem("y_stats", JSON.stringify(fd));
@@ -854,6 +854,14 @@ function submitAns() {
     
     // Allow re-answering done cards
     
+    // Check if answer is empty (not multi-field)
+    if(!isMulti && !curCard.opts) {
+        var _ua = inp.value.trim();
+        if(!_ua) {
+            _subBtn.disabled = false;
+            return;
+        }
+    }
     var correct = false;
     if(isMulti) {
         // Multi-field: check all fields
@@ -898,7 +906,7 @@ function submitAns() {
         var sd = JSON.parse(localStorage.getItem('y_stats')||'{}');
         if(sd.d !== tk) { sd = {d:tk, n:0}; }
         sd.n++; localStorage.setItem('y_stats', JSON.stringify(sd));
-        _supa.from('daily_stats').upsert({uid:_uid,data:sd},{onConflict:'uid'}).then(function(r){if(r.error)console.warn("STATS_UPSERT_ERR:",r.error)}).catch(function(e){console.warn("STATS_UPSERT_FAIL:",e)});
+        _supa.from('daily_stats').upsert({uid:_uid,data:sd},{onConflict:'uid'}).catch(function(){});
         var el = document.getElementById('today-cnt');
         if(el) el.textContent = '今日: '+sd.n;
     } catch(e){}
@@ -998,7 +1006,7 @@ function markEasy() {
     p.m = true; p.i = 90; p.n = Date.now()+90*86400000;
     prog[curCard.i] = p;
     sessStats.ok++; sessStats.tot++;
-    try { var td=new Date(),tk=td.getFullYear()+"-"+(td.getMonth()+1)+"-"+td.getDate(); var sd=JSON.parse(localStorage.getItem("y_stats")||"{}"); if(sd.d!==tk){sd={d:tk,n:0};} sd.n++; localStorage.setItem("y_stats",JSON.stringify(sd)); _supa.from('daily_stats').upsert({uid:_uid,data:sd},{onConflict:'uid'}).then(function(r){if(r.error)console.warn("STATS_UPSERT_ERR:",r.error)}).catch(function(e){console.warn("STATS_UPSERT_FAIL:",e)}); } catch(e){}
+    try { var td=new Date(),tk=td.getFullYear()+"-"+(td.getMonth()+1)+"-"+td.getDate(); var sd=JSON.parse(localStorage.getItem("y_stats")||"{}"); if(sd.d!==tk){sd={d:tk,n:0};} sd.n++; localStorage.setItem("y_stats",JSON.stringify(sd)); _supa.from('daily_stats').upsert({uid:_uid,data:sd},{onConflict:'uid'}).catch(function(){}); } catch(e){}
     saveProg(); cardIdx++; showCard();
 }
 
@@ -1008,7 +1016,7 @@ function mark42() {
     p.i = 42; p.n = Date.now()+42*86400000; p.p42 = true;
     prog[curCard.i] = p;
     sessStats.ok++; sessStats.tot++;
-    try { var td=new Date(),tk=td.getFullYear()+"-"+(td.getMonth()+1)+"-"+td.getDate(); var sd=JSON.parse(localStorage.getItem("y_stats")||"{}"); if(sd.d!==tk){sd={d:tk,n:0};} sd.n++; localStorage.setItem("y_stats",JSON.stringify(sd)); _supa.from('daily_stats').upsert({uid:_uid,data:sd},{onConflict:'uid'}).then(function(r){if(r.error)console.warn("STATS_UPSERT_ERR:",r.error)}).catch(function(e){console.warn("STATS_UPSERT_FAIL:",e)}); } catch(e){}
+    try { var td=new Date(),tk=td.getFullYear()+"-"+(td.getMonth()+1)+"-"+td.getDate(); var sd=JSON.parse(localStorage.getItem("y_stats")||"{}"); if(sd.d!==tk){sd={d:tk,n:0};} sd.n++; localStorage.setItem("y_stats",JSON.stringify(sd)); _supa.from('daily_stats').upsert({uid:_uid,data:sd},{onConflict:'uid'}).catch(function(){}); } catch(e){}
     saveProg(); cardIdx++; showCard();
 }
 
