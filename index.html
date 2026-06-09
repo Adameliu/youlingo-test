@@ -441,11 +441,12 @@ function login() {
     errDiv.classList.add("hide");
     document.getElementById("btn-login").disabled = true;
     document.getElementById("btn-login").textContent = "登录中...";
-    _supa.auth.signInWithPassword({email:email, password:pass}).then(function() {
+    _supa.auth.signInWithPassword({email:email, password:pass}).then(function(res) {
+        if(res.error) throw res.error;
         document.getElementById("login-page").style.display = "none";
         document.getElementById("app").style.display = "";
     }).catch(function(e) {
-        errDiv.textContent = "登录失败: " + e.message;
+        errDiv.textContent = "登录失败: " + (e.message || "请检查账号密码");
         errDiv.classList.remove("hide");
         document.getElementById("btn-login").disabled = false;
         document.getElementById("btn-login").textContent = "登录";
