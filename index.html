@@ -371,25 +371,37 @@ function loadDailyStats() {
             refreshStatsDisplay();
         });
         
-        if(!_statsSubscribed) {
-            _statsSubscribed = true;
-            _supa.channel("stats-changes").on("postgres_changes", {
-                event: "*",
-                schema: "public",
-                table: "daily_stats",
-                filter: "uid=eq."+_uid
-            }, function(payload) {
-                try {
-                    if(payload.new && payload.new.data) {
-                        handleRemoteStats(payload.new.data);
-                    }
-                } catch(e){}
-            }).subscribe();
-        }
+        subscribeRealtime();
     } catch(e){}
 }
-var _progSubscribed = false;
-var _statsSubscribed = false;
+
+var _realtimeSubscribed = false;
+function subscribeRealtime() {
+    if(!_uid || _realtimeSubscribed) return;
+    _realtimeSubscribed = true;
+    _supa.channel('user-data-sync')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'progress', filter: 'uid=eq.'+_uid }, function(payload) {
+            if(_syncing) return;
+            var d = payload.new && payload.new.data;
+            if(d && JSON.stringify(d) !== JSON.stringify(prog)) {
+                prog = d;
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(prog));
+                renderMods();
+                refreshStatsDisplay();
+            }
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_stats', filter: 'uid=eq.'+_uid }, function(payload) {
+            try {
+                if(payload.new && payload.new.data) {
+                    handleRemoteStats(payload.new.data);
+                }
+            } catch(e){}
+        })
+        .subscribe(function(status) {
+            console.log("Realtime status:", status);
+        });
+}
+
 function loadProg() {
     try { var p = localStorage.getItem(STORAGE_KEY); if(p) prog = JSON.parse(p); } catch(e) {}
     if(isDemo) { renderMods(); refreshStatsDisplay(); return; }
@@ -411,25 +423,8 @@ function loadProg() {
         refreshStatsDisplay();
         restoreState();
     }).catch(function(){ renderMods(); refreshStatsDisplay(); restoreState(); });
-    // Listen for realtime changes (only once)
-    if(!_progSubscribed) {
-        _progSubscribed = true;
-        _supa.channel('progress-changes').on('postgres_changes', {
-            event: '*',
-            schema: 'public',
-            table: 'progress',
-            filter: 'uid=eq.'+_uid
-        }, function(payload) {
-            if(_syncing) return;
-            var d = payload.new && payload.new.data;
-            if(d && JSON.stringify(d) !== JSON.stringify(prog)) {
-                prog = d;
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(prog));
-                renderMods();
-                refreshStatsDisplay();
-            }
-        }).subscribe();
-    }
+    
+    subscribeRealtime();
 }
 loadProg();
 // Load today count from localStorage + Supabase sync
