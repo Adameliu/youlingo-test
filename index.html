@@ -287,6 +287,40 @@ function saveProg() {
     }, 300);
 }
 
+function loadDailyStats() {
+    if(!_uid) return;
+    try {
+        var sd = JSON.parse(localStorage.getItem("y_stats")||"{}");
+        var td = new Date(), tk = td.getFullYear()+"-"+(td.getMonth()+1)+"-"+td.getDate();
+        _supa.from("daily_stats").select("data").eq("uid",_uid).single().then(function(result) {
+            var fd = result.data && result.data.data;
+            if(fd && fd.d === tk && fd.n > (sd.n||0)) {
+                localStorage.setItem("y_stats", JSON.stringify(fd));
+                var el = document.getElementById("today-cnt");
+                if(el) el.textContent = "今日: "+fd.n;
+            }
+        }).catch(function(){});
+        _supa.channel("stats-changes").on("postgres_changes", {
+            event: "*",
+            schema: "public",
+            table: "daily_stats",
+            filter: "uid=eq."+_uid
+        }, function(payload) {
+            try {
+                var fd = payload.new && payload.new.data;
+                var td2 = new Date(), tk2 = td2.getFullYear()+"-"+(td2.getMonth()+1)+"-"+td2.getDate();
+                if(fd && fd.d === tk2) {
+                    var cur = JSON.parse(localStorage.getItem("y_stats")||"{}");
+                    if(fd.n > (cur.n||0)) {
+                        localStorage.setItem("y_stats", JSON.stringify(fd));
+                        var el = document.getElementById("today-cnt");
+                        if(el) el.textContent = "今日: "+fd.n;
+                    }
+                }
+            } catch(e){}
+        }).subscribe();
+    } catch(e){}
+}
 function loadProg() {
     // Migrate old storage key
     try {
@@ -467,6 +501,7 @@ _supa.auth.onAuthStateChange(function(event, session) {
             document.getElementById("app").insertAdjacentHTML("afterbegin", '<div class="alert alert-warning text-center py-1 mb-2" style="font-size:.8rem">⚠️ Demo 模式 · 清除缓存后数据会丢失</div>');
         }
         loadProg();
+        loadDailyStats();
     } else {
         document.getElementById("login-page").style.display = "";
         document.getElementById("app").style.display = "none";
