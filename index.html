@@ -296,6 +296,44 @@ function getTodayDateStr() {
     return [year, month, day].join('-');
 }
 
+// Helper to sync remote stats and merge ID sets safely
+function handleRemoteStats(fd) {
+    if(!fd) return;
+    var today = getTodayDateStr();
+    var cur = JSON.parse(localStorage.getItem("y_stats")||"{}");
+    if(cur.d !== today) { cur = {d:today, n:0, ids:[]}; }
+
+    if(fd.d === today) {
+        var mergedIds = cur.ids || [];
+        var remoteIds = fd.ids || [];
+        var changedLocal = false;
+        
+        for(var i=0; i<remoteIds.length; i++) {
+            if(mergedIds.indexOf(remoteIds[i]) === -1) {
+                mergedIds.push(remoteIds[i]);
+                changedLocal = true;
+            }
+        }
+        
+        var needsPush = mergedIds.length > remoteIds.length;
+
+        if(changedLocal || cur.n !== mergedIds.length) {
+            cur.ids = mergedIds;
+            cur.n = mergedIds.length;
+            localStorage.setItem("y_stats", JSON.stringify(cur));
+            refreshStatsDisplay();
+        }
+        
+        if(needsPush) {
+            _supa.from("daily_stats").upsert({uid:_uid, data:cur}, {onConflict:"uid"}).select().catch(function(){});
+        }
+    } else if (fd.d !== today) {
+         if(cur.n > 0) {
+             _supa.from("daily_stats").upsert({uid:_uid, data:cur}, {onConflict:"uid"}).select().catch(function(){});
+         }
+    }
+}
+
 function loadDailyStats() {
     var tk = getTodayDateStr();
     if(!_uid) {
@@ -312,29 +350,7 @@ function loadDailyStats() {
         }
 
         _supa.from("daily_stats").select("data").eq("uid",_uid).maybeSingle().then(function(result) {
-            var fd = result.data && result.data.data;
-            var current_sd = JSON.parse(localStorage.getItem("y_stats")||"{}");
-            
-            if(fd && fd.d === tk) {
-                // Merge IDs from remote if it's the same day
-                var mergedIds = current_sd.ids || [];
-                var remoteIds = fd.ids || [];
-                var changed = false;
-                for(var i=0; i<remoteIds.length; i++) {
-                    if(mergedIds.indexOf(remoteIds[i]) === -1) {
-                        mergedIds.push(remoteIds[i]);
-                        changed = true;
-                    }
-                }
-                if(changed || current_sd.n !== mergedIds.length) {
-                    current_sd.ids = mergedIds;
-                    current_sd.n = mergedIds.length;
-                    localStorage.setItem("y_stats", JSON.stringify(current_sd));
-                }
-            } else if (fd && fd.d !== tk) {
-                // Remote is old, push our local (possibly fresh) today state to remote
-                _supa.from("daily_stats").upsert({uid:_uid, data:current_sd}, {onConflict:'uid'}).select().catch(function(){});
-            }
+            handleRemoteStats(result.data && result.data.data);
             refreshStatsDisplay();
         }).catch(function(e){
             console.log("LOAD_STATS_ERR:",e.message);
@@ -350,19 +366,7 @@ function loadDailyStats() {
                 filter: "uid=eq."+_uid
             }, function(payload) {
                 try {
-                    var fd = payload.new && payload.new.data;
-                    var today = getTodayDateStr();
-                    if(fd && fd.d === today) {
-                        var cur = JSON.parse(localStorage.getItem("y_stats")||"{}");
-                        if(fd.n > (cur.n||0)) {
-                            localStorage.setItem("y_stats", JSON.stringify(fd));
-                            refreshStatsDisplay();
-                        }
-                    } else if (fd && fd.d !== today) {
-                        // If remote was reset to a new day elsewhere
-                        localStorage.setItem("y_stats", JSON.stringify({d:today, n:0, ids:[]}));
-                        refreshStatsDisplay();
-                    }
+                    handleRemoteStats(payload.new && payload.new.data);
                 } catch(e){}
             }).subscribe();
         }
