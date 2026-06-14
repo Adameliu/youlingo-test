@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Youlingo友邻国</title>
+<link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<link rel="manifest" href="./manifest.json">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --primary: #1cb0f6;
+  --primary-border: #1899d6;
+  --primary-light: #ddf4ff;
+  --success: #58cc02;
+  --success-border: #46a302;
+  --success-light: #d7ffb8;
+  --danger: #ff4b4b;
+  --danger-border: #ea2b2b;
+  --danger-light: #ffdfdf;
+  --warning: #ffc800;
+  --warning-border: #e5a400;
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --text-main: #3c3c3c;
+  --text-muted: #afafaf;
+  --border: #e5e5e5;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body { background: var(--bg); font-family: 'Nunito', system-ui, -apple-system, sans-serif; color: var(--text-main); margin: 0; overflow-x: hidden; }
+.container { max-width: 800px; margin: 0 auto; padding: 20px 15px; }
+.navbar { background: #fff; border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 1000; padding: 12px 0; }
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+
+/* 3D Button System */
+.btn { font-weight: 800; border-radius: 16px; border: 2px solid transparent; letter-spacing: 0.8px; transition: all 0.1s ease; outline: none !important; text-transform: uppercase; font-size: 0.85rem; padding: 12px 20px; position: relative; }
+.btn-primary { background: var(--primary); border-color: var(--primary-border); box-shadow: 0 4px 0 var(--primary-border); color: #fff; }
+.btn-primary:hover { background: #14a0e0; border-color: #1289c0; }
+.btn-primary:active { transform: translateY(4px); box-shadow: 0 0 0 transparent; }
+
+.btn-success { background: var(--success); border-color: var(--success-border); box-shadow: 0 4px 0 var(--success-border); color: #fff; }
+.btn-success:hover { background: #4caf02; border-color: #3e8e02; }
+.btn-success:active { transform: translateY(4px); box-shadow: 0 0 0 transparent; }
+
+.btn-danger { background: var(--danger); border-color: var(--danger-border); box-shadow: 0 4px 0 var(--danger-border); color: #fff; }
+.btn-danger:active { transform: translateY(4px); box-shadow: 0 0 0 transparent; }
+
+.btn-outline-secondary { border: 2px solid var(--border); background: #fff; color: var(--text-muted); box-shadow: 0 4px 0 var(--border); }
+.btn-outline-secondary:active { transform: translateY(4px); box-shadow: 0 0 0 transparent; }
+
+.mod-card { background: var(--surface); border-radius: 20px; padding: 24px 16px; text-align: center; cursor: pointer; border: 2px solid var(--border); box-shadow: 0 4px 0 var(--border); transition: all .15s ease; position: relative; }
+.mod-card:hover { border-color: var(--primary); background: var(--primary-light); }
+.mod-card:active { transform: translateY(4px); box-shadow: 0 0 0 transparent; }
+.mod-card .name { font-weight: 800; font-size: 1.1rem; margin-bottom: 8px; }
+
+.sec-item { background: var(--surface); border-radius: 20px; padding: 16px 24px; margin-bottom: 16px; cursor: pointer; border: 2px solid var(--border); box-shadow: 0 4px 0 var(--border); transition: all .15s ease; display: flex; justify-content: space-between; align-items: center; }
+.sec-item:hover { border-color: var(--primary); background: var(--primary-light); }
+.sec-item:active { transform: translateY(4px); box-shadow: 0 0 0 transparent; }
+
+/* Study Mode Header */
+.study-header { position: fixed; top: 0; left: 0; right: 0; height: 70px; background: #fff; z-index: 1001; display: flex; align-items: center; padding: 0 20px; border-bottom: 2px solid var(--border); }
+.quit-btn { font-size: 24px; color: var(--text-muted); cursor: pointer; padding: 10px; font-weight: 800; }
+.pbar-container { flex: 1; height: 16px; background: var(--border); border-radius: 10px; margin: 0 20px; overflow: hidden; position: relative; }
+.pbar-fill { height: 100%; background: var(--success); border-radius: 10px; transition: width 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28); }
+
+/* Study Content Area */
+#scr-study { padding-top: 90px; padding-bottom: 160px; min-height: 100vh; }
+.card-box { border: none; box-shadow: none; background: transparent; padding: 0; }
+.q-text { font-size: 1.8rem; font-weight: 800; color: #4b4b4b; text-align: left; margin-bottom: 30px; line-height: 1.3; }
+
+/* Feedback Footer */
+.footer-feedback { position: fixed; bottom: 0; left: 0; right: 0; min-height: 140px; padding: 20px; z-index: 1002; transition: all 0.3s ease; transform: translateY(100%); background: #fff; border-top: 2px solid var(--border); }
+.footer-feedback.show { transform: translateY(0); }
+.footer-feedback.correct { background: var(--success-light); border-top-color: #a5ed6e; }
+.footer-feedback.wrong { background: var(--danger-light); border-top-color: #ffc1c1; }
+.footer-content { max-width: 800px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+.fb-text { display: flex; align-items: flex-start; gap: 15px; }
+.fb-icon { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 800; }
+.correct .fb-icon { background: #fff; color: var(--success); }
+.wrong .fb-icon { background: #fff; color: var(--danger); }
+.fb-msg h4 { font-weight: 800; margin-bottom: 4px; font-size: 1.4rem; }
+.fb-msg p { margin: 0; font-weight: 700; color: #4b4b4b; }
+
+/* Options Area */
+#opts-area { gap: 12px; }
+.opt-btn { border: 2px solid var(--border); box-shadow: 0 4px 0 var(--border); border-radius: 16px; padding: 14px 20px; font-size: 1.1rem; font-weight: 700; transition: all 0.1s; background: #fff; text-align: left; }
+.opt-btn:hover { background: #f7f7f7; }
+.opt-btn.sel { background: var(--primary-light); border-color: var(--primary); color: var(--primary); box-shadow: 0 4px 0 var(--primary); }
+
+.inp { border: 2px solid var(--border); background: #f7f7f7; border-radius: 16px; font-size: 1.2rem; padding: 15px; text-align: left; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
+.inp:focus { background: #fff; border-color: var(--primary); }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+.shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+</style>
+</head>
+<body>
+<nav class="navbar">
+<div class="container d-flex align-items-center" style="padding:0 20px">
+  <div class="d-flex align-items-center gap-3">
+    <span class="fw-bold" style="color:var(--primary); cursor:pointer; font-size:1.4rem; letter-spacing:-0.5px" onclick="goHome()">YOULINGO</span>
+  </div>
+  <div class="ms-auto d-flex align-items-center gap-4">
+    <div id="streak-cnt" class="d-flex align-items-center gap-1 fw-bold" style="color:var(--warning); display:none !important">
+      <span>🔥</span><span id="streak-num">0</span>
+    </div>
+    <div id="today-cnt-box" class="d-flex align-items-center gap-1 fw-bold" style="color:var(--primary)">
+      <span>💎</span><span id="today-cnt">0</span>
+    </div>
+    <div id="review-cnt-box" class="d-flex align-items-center gap-1 fw-bold" style="color:var(--success)">
+      <span>📚</span><span id="review-cnt">0</span>
+    </div>
+    <button class="btn btn-sm btn-outline-secondary" style="padding:6px 12px; font-size:0.7rem; box-shadow:0 2px 0 var(--border)" onclick="doLogout()">退出</button>
+  </div>
+</div>
+</nav>
+
+<div class="container" id="login-page" style="max-width:400px; margin:100px auto">
+  <div class="text-center mb-5">
+    <h1 style="font-weight:900; color:var(--primary); font-size:2.5rem">Youlingo</h1>
+    <p class="text-muted fw-bold">简单、有趣、科学的语言学习</p>
+  </div>
+  <div id="login-error" class="alert alert-danger hide"></div>
+  <div class="mb-3">
+    <input type="email" id="login-email" class="form-control inp" placeholder="邮箱" autocomplete="email">
+  </div>
+  <div class="mb-4">
+    <input type="password" id="login-pass" class="form-control inp" placeholder="密码" autocomplete="current-password">
+  </div>
+  <button id="btn-login" class="btn btn-primary w-100 mb-3" onclick="login()">登录</button>
+  <button class="btn btn-outline-secondary w-100" onclick="demoLogin()">🎮 Demo 体验</button>
+</div>
+
+<div class="container" id="app" style="display:none; padding-top:40px">
+
+<div id="scr-modules">
+  <div class="d-flex justify-content-center gap-3 mb-5">
+    <button class="btn btn-lg" id="btn-lang-de" style="border-radius:20px; min-width:140px" onclick="switchLang('german')">🇩🇪 德语</button>
+    <button class="btn btn-lg" id="btn-lang-en" style="border-radius:20px; min-width:140px" onclick="switchLang('english')">🇬🇧 英语</button>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-end mb-4">
+    <div>
+      <h3 class="fw-bold mb-1">学习课程</h3>
+      <p class="text-muted small fw-bold" id="lang-desc">准备就绪</p>
+    </div>
+    <button class="btn btn-primary" id="btn-start-study" style="padding:10px 25px">开始学习</button>
+  </div>
+
+  <div class="grid-3 mb-5" id="mod-grid"></div>
+  
+  <div class="stats mb-5" id="gstats"></div>
+  
+  <div class="text-center">
+    <button class="btn btn-sm btn-outline-secondary" id="btn-reset-all" style="opacity:0.5; font-size:0.7rem" onclick="resetAll()">重置全部进度</button>
+  </div>
+</div>
+
+<div id="scr-sections" class="hide">
+  <div class="d-flex align-items-center mb-4">
+    <div class="quit-btn me-3" style="font-size:2rem" id="back-mod2">&larr;</div>
+    <h3 class="fw-bold mb-0" id="sec-mod-name"></h3>
+  </div>
+  
+  <div class="pbar-container mb-4" style="height:20px">
+    <div class="pbar-fill" id="mod-pfill" style="width:0%"></div>
+  </div>
+  
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <p class="text-muted fw-bold mb-0">选择一个小节开始</p>
+    <button class="btn btn-sm btn-outline-danger" style="font-size:0.7rem; padding:5px 10px; box-shadow:0 2px 0 var(--danger-border)" onclick="resetModule()">重置模块</button>
+  </div>
+  
+  <div class="sec-list" id="sec-list"></div>
+</div>
+
+<div id="scr-study" class="hide">
+  <!-- Fixed Study Header -->
+  <div class="study-header">
+    <div class="quit-btn" onclick="goHome()">&times;</div>
+    <div class="pbar-container">
+      <div class="pbar-fill" id="spfill" style="width: 0%"></div>
+    </div>
+    <div id="streak-indicator" style="font-weight:800; color:var(--warning); font-size:1.1rem"></div>
+  </div>
+
+  <div class="container" style="max-width: 600px;">
+    <div id="study-sec-name" class="text-muted small mb-4 fw-bold" style="letter-spacing:1px; text-transform:uppercase"></div>
+    
+    <div class="card-box" id="card-box">
+      <div id="ctype" class="hide"></div>
+      <div class="q-text" id="qarea"></div>
+      
+      <div id="multi-fields-area" class="mb-4"></div>
+      <div id="opts-area" class="mb-4"></div>
+      
+      <div class="mb-4">
+        <input type="text" class="form-control inp" id="ans-inp" placeholder="输入答案..." autocomplete="off">
+      </div>
+      
+      <div class="shortcut-hint mb-5" id="shortcut-hint"></div>
+
+      <!-- Completion Screen (Hooray) -->
+      <div class="hooray hide fade-in" id="hooray">
+        <div style="font-size: 5rem; margin-bottom: 20px;">🎉</div>
+        <h2 style="font-weight: 800; margin-bottom: 10px;">本节已完成！</h2>
+        <p id="hooray-stats" style="color:#666; font-size:1.1rem; margin-bottom:30px"></p>
+        <div class="d-flex gap-3 justify-content-center">
+          <button class="btn btn-outline-secondary" id="btn-done">返回列表</button>
+          <button class="btn btn-success" id="btn-next-sec">下一节 &rarr;</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Persistent Feedback Footer -->
+  <div class="footer-feedback" id="footer-feedback">
+    <div class="footer-content">
+      <div class="fb-text hide" id="fb-content">
+        <div class="fb-icon" id="fb-icon"></div>
+        <div class="fb-msg">
+          <h4 id="fb-title"></h4>
+          <p id="fb-sub"></p>
+        </div>
+      </div>
+      
+      <div id="action-btns" class="d-flex gap-2">
+        <button class="btn btn-outline-secondary hide" id="btn-misclick">手抖了</button>
+        <button class="btn btn-outline-secondary hide" id="btn-easy">太简单了</button>
+        <button class="btn btn-outline-secondary hide" id="btn-42">42天后</button>
+        <button class="btn btn-outline-secondary hide" id="btn-show">显示答案</button>
+      </div>
+
+      <button class="btn btn-primary" id="btn-submit" style="min-width: 150px;">检查</button>
+      <button class="btn btn-success hide" id="btn-next" style="min-width: 150px;">继续</button>
+    </div>
+  </div>
+</div>
+
+</div>
+<script>
+// Global error handler
+window.onerror = function(msg, url, line) {
+    var el = document.getElementById('toast');
+    if(!el) { el = document.createElement('div'); el.id='toast'; el.className='toast'; document.body.appendChild(el); }
+    el.textContent = '⚠ ' + (msg||'未知错误');
+    el.classList.add('show');
+    setTimeout(function(){ el.classList.remove('show'); }, 4000);
+};
+function showFatal(msg) {
+    var el = document.getElementById('login-page') || document.getElementById('app') || document.body;
+    var safeMsg = esc(msg || '未知错误');
+    el.innerHTML = '<div class="alert alert-danger m-3" style="max-width:500px;margin:40px auto"><h5>✗ 加载失败</h5><p class="small">'+safeMsg+'</p><button class="btn btn-sm btn-outline-secondary" onclick="location.reload()">刷新页面</button></div>';
+}
+
+const STORAGE_KEY = "youlingo_progress_v2";
+
+// XSS-safe HTML escaping for plain text inserted via innerHTML
+function esc(s) {
+    if(!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+// Rich text sanitizer: strip dangerous HTML, keep safe formatting tags
+// Used for question text, options, and answers that legitimately contain <span style="color:red"> etc.
+function sanitizeHTML(html) {
+    if(!html) return '';
+    var tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    sanitizeNode(tmp);
+    return tmp.innerHTML;
+}
+function sanitizeNode(node) {
+    var ALLOWED_TAGS = {'SPAN':1,'B':1,'I':1,'U':1,'EM':1,'STRONG':1,'BR':1,'SUB':1,'SUP':1};
+    var ALLOWED_STYLE = /color|font-weight|font-style|text-decoration|background-color/;
+    var children = Array.prototype.slice.call(node.childNodes);
+    for(var i=0; i<children.length; i++) {
+        var child = children[i];
+        if(child.nodeType === 3) continue; // text node, safe
+        if(child.nodeType !== 1) { node.removeChild(child); continue; } // remove non-element nodes
+        // Remove disallowed tags but keep their children
+        if(!ALLOWED_TAGS[child.tagName]) {
+            while(child.firstChild) node.insertBefore(child.firstChild, child);
+            node.removeChild(child);
+            continue;
+        }
+        // Strip all attributes except safe style
+        var attrs = Array.prototype.slice.call(child.attributes);
+        for(var a=0; a<attrs.length; a++) {
+            var attr = attrs[a];
+            if(attr.name === 'style') {
+                // Filter style to only allow safe properties
+                var safeStyles = [];
+                var parts = attr.value.split(';');
+                for(var s=0; s<parts.length; s++) {
+                    var prop = parts[s].split(':')[0].trim().toLowerCase();
+                    if(ALLOWED_STYLE.test(prop)) safeStyles.push(parts[s]);
+                }
+                if(safeStyles.length) child.setAttribute('style', safeStyles.join(';'));
+                else child.removeAttribute('style');
+            } else if(attr.name !== 'class') {
+                child.removeAttribute(attr.name);
+            }
+        }
+        // Recursively sanitize children
+        sanitizeNode(child);
+    }
+}
+
+var curModIdx = -1, curSecIdx = -1;
+var STATE_KEY = "youlingo_state";
+
+function saveState() {
+    var state = {mi:curModIdx, si:curSecIdx, ci:cardIdx};
+    var scr = document.getElementById("scr-study");
+    state.study = scr && !scr.classList.contains("hide");
+    try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch(e){}
+}
+function clearState() { try { localStorage.removeItem(STATE_KEY); } catch(e){} }
+function restoreState() {
+    try {
+        var s = JSON.parse(localStorage.getItem(STATE_KEY));
+        if(!s || !s.study || !langData || !langData[s.mi]) {
+            clearState(); return;
+        }
+        var sec = langData[s.mi].sections[s.si];
+        if(!sec) { clearState(); return; }
+        // Re-enter study mode at saved position
+        startStudy(s.mi, s.si);
+        if(s.ci > 0 && s.ci < cards.length) {
+            cardIdx = s.ci;
+            showCard();
+        }
+    } catch(e){ clearState(); }
+}
+var cards = [], cardIdx = 0, curCard = null;
+var sessStats = {ok:0, no:0, tot:0};
+var prog = {};
+var _audio = null;
+var _cardShownAt = 0; // 卡片显示时间戳，用于判断答题速度
+
+// Supabase
+var _supa = supabase.createClient('https://iwpzcmmwtnvcphatrucd.supabase.co', 'sb_publishable_1DKV3HyHb9yf5riwUGNwLQ_99TA-F45');
+var _uid = null;
+var R2_BASE = "https://pub-1c1a3bd3f4554dc4afce6c91070cf22e.r2.dev";
+
+var _saveTimer = null;
+var _syncing = false;
+function saveProg() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(prog));
+    if(isDemo || !_uid) return;
+    if(_saveTimer) clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(function() {
+        _syncing = true;
+        _supa.from('progress').upsert({uid:_uid, data:prog}, {onConflict:'uid'}).then(function(){_syncing=false;}).catch(function(){_syncing=false;});
+    }, 300);
+}
+
+// Helper to get consistent date key (YYYY-MM-DD)
+function getTodayDateStr() {
+    var d = new Date();
+    var month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+    return [year, month, day].join('-');
+}
+
+// Helper to sync remote stats and merge ID sets safely
+function handleRemoteStats(fd) {
+    if(!fd) return;
+    var today = getTodayDateStr();
+    var cur = JSON.parse(localStorage.getItem("y_stats")||"{}");
+    if(cur.d !== today) { cur = {d:today, n:0, ids:[]}; }
+
+    if(fd.d === today) {
+        if (!fd.ids && fd.n > 0) {
+            // Legacy/migrated data without IDs
+            if (cur.n < fd.n) {
+                cur.n = fd.n;
+                cur.ids = cur.ids || [];
+                localStorage.setItem("y_stats", JSON.stringify(cur));
+            }
+        } else {
+            var mergedIds = cur.ids || [];
+            var remoteIds = fd.ids || [];
+            var changedLocal = false;
+            
+            for(var i=0; i<remoteIds.length; i++) {
+                if(mergedIds.indexOf(remoteIds[i]) === -1) {
+                    mergedIds.push(remoteIds[i]);
+                    changedLocal = true;
+                }
+            }
+            
+            var needsPush = mergedIds.length > remoteIds.length;
+
+            if(changedLocal || cur.n !== mergedIds.length) {
+                cur.ids = mergedIds;
+                cur.n = Math.max(cur.n || 0, mergedIds.length);
+                localStorage.setItem("y_stats", JSON.stringify(cur));
+            }
+            
+            if(needsPush) {
+                _supa.from("daily_stats").upsert({uid:_uid, data:cur}, {onConflict:"uid"}).select().catch(function(){});
+            }
+        }
+        
+        // ALWAYS refresh UI on incoming current-day data to handle same-browser multi-tab sync
+        refreshStatsDisplay();
+        
+    } else if (fd.d !== today) {
+         if(cur.n > 0) {
+             _supa.from("daily_stats").upsert({uid:_uid, data:cur}, {onConflict:"uid"}).select().catch(function(){});
+         }
+    }
+}
+
+function loadDailyStats() {
+    var tk = getTodayDateStr();
+    if(!_uid) {
+        var sd = JSON.parse(localStorage.getItem("y_stats")||"{}");
+        if(sd.d !== tk) localStorage.setItem("y_stats", JSON.stringify({d:tk, n:0, ids:[]}));
+        refreshStatsDisplay();
+        return;
+    }
+    try {
+        var sd = JSON.parse(localStorage.getItem("y_stats")||"{}");
+        if(sd.d !== tk) {
+            sd = {d:tk, n:0, ids:[]};
+            localStorage.setItem("y_stats", JSON.stringify(sd));
+        }
+
+        _supa.from("daily_stats").select("data").eq("uid",_uid).maybeSingle().then(function(result) {
+            if(result.data && result.data.data) {
+                handleRemoteStats(result.data.data);
+            }
+            refreshStatsDisplay();
+        }).catch(function(e){
+            refreshStatsDisplay();
+        });
+        
+        subscribeRealtime();
+    } catch(e){}
+}
+
+var _realtimeChannel = null;
+function subscribeRealtime() {
+    if(!_uid) return;
+    // If already subscribed to a different UID, cleanup first
+    if(_realtimeChannel) {
+        if(_realtimeChannel.topic === 'user-data-sync:' + _uid) return; // Already correct
+        _supa.removeChannel(_realtimeChannel);
+    }
+    
+    _realtimeChannel = _supa.channel('user-data-sync:' + _uid)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'progress', filter: 'uid=eq.'+_uid }, function(payload) {
+            if(_syncing) return;
+            var d = payload.new && payload.new.data;
+            if(d && JSON.stringify(d) !== JSON.stringify(prog)) {
+                prog = d;
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(prog));
+                renderMods();
+                
+                // Fallback sync: fetch daily_stats manually on progress change
+                _supa.from("daily_stats").select("data").eq("uid",_uid).maybeSingle().then(function(result) {
+                    if(result.data && result.data.data) handleRemoteStats(result.data.data);
+                    else refreshStatsDisplay();
+                }).catch(function(){ refreshStatsDisplay(); });
+            }
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_stats', filter: 'uid=eq.'+_uid }, function(payload) {
+            try {
+                if(payload.new && payload.new.data) handleRemoteStats(payload.new.data);
+            } catch(e){}
+        })
+        .subscribe();
+}
+
+function loadProg() {
+    try { var p = localStorage.getItem(STORAGE_KEY); if(p) prog = JSON.parse(p); } catch(e) {}
+    if(isDemo) { renderMods(); refreshStatsDisplay(); return; }
+    if(!_uid) return;
+    // Load from Supabase
+    _supa.from('progress').select('data').eq('uid',_uid).maybeSingle().then(function(result) {
+        var d = result.data && result.data.data;
+        if(d) {
+            var merged = false;
+            for(var k in d) {
+                if(!prog[k] || (d[k].n || 0) > (prog[k].n || 0)) {
+                    prog[k] = d[k];
+                    merged = true;
+                }
+            }
+            if(merged) localStorage.setItem(STORAGE_KEY, JSON.stringify(prog));
+        }
+        renderMods();
+        refreshStatsDisplay();
+        restoreState();
+    }).catch(function(){ renderMods(); refreshStatsDisplay(); restoreState(); });
+    
+    subscribeRealtime();
+}
+// Initial load removed here, moved to Auth state change only
+// loadProg();
+
+// Load today count from localStorage + Supabase sync
+// Streak tracking
+function getTodayKey() {
+    return getTodayDateStr();
+}
+function getYesterdayKey() {
+    var yd = new Date(Date.now() - 86400000);
+    var month = '' + (yd.getMonth() + 1), day = '' + yd.getDate(), year = yd.getFullYear();
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+    return [year, month, day].join('-');
+}
+function updateStreak() {
+    try {
+        var tk = getTodayKey();
+        var yk = getYesterdayKey();
+        var streak = JSON.parse(localStorage.getItem('y_streak') || '{}');
+        if(streak.d === tk) return; // 今天已更新过
+        if(streak.d === yk) {
+            streak.s = (streak.s || 1) + 1; // 连续
+        } else {
+            streak.s = 1; // 中断或首次
+        }
+        streak.d = tk;
+        localStorage.setItem('y_streak', JSON.stringify(streak));
+        showStreak(streak.s);
+    } catch(e){}
+}
+function showStreak(s) {
+    if(!s || s < 2) return; // 不显示1天的streak
+    var el = document.getElementById('streak-cnt');
+    var num = document.getElementById('streak-num');
+    if(el && num) { num.textContent = s; el.style.display = ''; }
+}
+// Load streak on startup
+try {
+    var streak = JSON.parse(localStorage.getItem('y_streak') || '{}');
+    if(streak.d === getTodayKey() || streak.d === getYesterdayKey()) {
+        showStreak(streak.s);
+    }
+} catch(e){}
+// Update streak when user studies (called from submitAns)
+function onStudyComplete() { updateStreak(); }
+
+
+// Auth functions
+var isDemo = false;
+function doLogout() {
+    if(_realtimeChannel) { _supa.removeChannel(_realtimeChannel); _realtimeChannel = null; }
+    if(!isDemo) { _supa.auth.signOut(); localStorage.removeItem("sb-iwpzcmmwtnvcphatrucd-auth-token"); }
+    isDemo = false;
+    try { localStorage.removeItem("y_demo"); } catch(e){}
+    document.getElementById("app").style.display = "none";
+    document.getElementById("login-page").style.display = "";
+    location.reload();
+}
+function demoLogin() {
+    if(!confirm("🎮 Demo 模式\n\n• 进度仅保存在本地浏览器\n• 清除缓存或换设备会丢失数据\n\n建议使用邮箱登录以同步进度")) return;
+    isDemo = true;
+    localStorage.setItem("y_demo", "1");
+    document.getElementById("login-page").style.display = "none";
+    document.getElementById("app").style.display = "";
+    if(!document.getElementById("demo-alert")) {
+        document.getElementById("app").insertAdjacentHTML("afterbegin", '<div id="demo-alert" class="alert alert-warning text-center py-1 mb-2" style="font-size:.8rem">⚠️ Demo 模式 · 清除缓存后数据会丢失</div>');
+    }
+    loadProg();
+    loadDailyStats();
+}
+function login() {
+    var email = document.getElementById("login-email").value.trim();
+    var pass = document.getElementById("login-pass").value;
+    var errDiv = document.getElementById("login-error");
+    errDiv.classList.add("hide");
+    document.getElementById("btn-login").disabled = true;
+    document.getElementById("btn-login").textContent = "登录中...";
+    _supa.auth.signInWithPassword({email:email, password:pass}).then(function(res) {
+        if(res.error) throw res.error;
+        if(!res.data || !res.data.session || !res.data.session.user) throw new Error("登录失败，请检查账号密码");
+        _uid = res.data.session.user.id;
+        document.getElementById("login-page").style.display = "none";
+        document.getElementById("app").style.display = "";
+        loadProg();
+        loadDailyStats();
+    }).catch(function(e) {
+        errDiv.textContent = "登录失败: " + (e.message || "请检查账号密码");
+        errDiv.classList.remove("hide");
+        document.getElementById("btn-login").disabled = false;
+        document.getElementById("btn-login").textContent = "登录";
+    });
+}
+
+// Check auth state on load
+try { if(localStorage.getItem("y_demo") === "1") { isDemo = true; } } catch(e){}
+
+_supa.auth.onAuthStateChange(function(event, session) {
+    if(session) {
+        var oldUid = _uid;
+        _uid = session.user.id;
+        if(oldUid !== _uid) {
+             document.getElementById("login-page").style.display = "none";
+             document.getElementById("app").style.display = "";
+             if(isDemo) {
+                 if(!document.getElementById("demo-alert")) {
+                     document.getElementById("app").insertAdjacentHTML("afterbegin", '<div id="demo-alert" class="alert alert-warning text-center py-1 mb-2" style="font-size:.8rem">⚠️ Demo 模式 · 清除缓存后数据会丢失</div>');
+                 }
+             }
+             loadProg();
+             loadDailyStats();
+        }
+    } else if (!isDemo) {
+        document.getElementById("login-page").style.display = "";
+        document.getElementById("app").style.display = "none";
+    }
+});
+
+
+// PWA
+if('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./service-worker.js');
+}
+var deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    var btn = document.getElementById('btn-install');
+    if(btn) btn.classList.remove('hide');
+});
+window.addEventListener('appinstalled', function() {
+    deferredPrompt = null;
+});
+
+function installApp() {
+    if(deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function() {
+            deferredPrompt = null;
+            document.getElementById('btn-install').classList.add('hide');
+        });
+        return;
+    }
+    // Try to detect iOS
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if(isIOS) {
+        alert("在 Safari 中点击分享按钮 → 添加到主屏幕");
+        return;
+    }
+    // Fallback for Android Chrome where event already fired
+    if(/Android/.test(navigator.userAgent) && 'onbeforeinstallprompt' in window) {
+        alert("请在 Chrome 菜单中点击「添加到主屏幕」");
+        return;
+    }
+    alert("请在浏览器菜单中选择「添加到主屏幕」");
+}
+function play(au) {
+    if(!au) return;
+    try {
+        if(!_audio) _audio = new Audio();
+        _audio.pause();
+        _audio.currentTime = 0;
+        var fn = au.split("/").pop();
+        _audio.src = R2_BASE + "/" + fn;
+        _audio.play()["catch"](function(){});
+    } catch(e){}
+}
+
+// === 预加载：复用单个 Audio 对象，避免内存泄漏 ===
+var _preloadAudio = new Audio();
+function preloadAudio(au) {
+    if(!au) return;
+    try {
+        var fn = au.split("/").pop();
+        _preloadAudio.src = R2_BASE + "/" + fn;
+        _preloadAudio.load();
+    } catch(e){}
+}
+
+
+
+function norm(s) { return s.replace(/\s+/g," ").trim(); }
+
+function stripPunct(s) {
+    return s.replace(/[.,!?\u3002\uFF0C\u3001\uFF01\uFF1F\u002E]+$/g, "");
+}
+
+function normApost(s) { return s.replace(/[\u2018\u2019\u201A\u201B\u2032\u2035`']/g, "'"); }
+
+function checkAns(ua, ca) {
+    if(!ua || !ca) return false;
+    var u = normApost(norm(ua));
+    var up = stripPunct(u);
+    var alts = ca.split("\u6216").map(function(s){ return normApost(norm(s)); }).filter(Boolean);
+    for(var i=0; i<alts.length; i++) {
+        var a = norm(alts[i]);
+        var ap = stripPunct(a);
+        if(u === a || up === ap) return true;
+    }
+    if(ca.indexOf("\u6216") === -1 && ca.indexOf(",") >= 0) {
+        var ca2 = ca.split(",").map(function(s){ return normApost(norm(s)); }).filter(Boolean);
+        for(var i=0; i<ca2.length; i++) {
+            var a = normApost(norm(ca2[i]));
+            var ap = stripPunct(a);
+            if(u === a || up === ap) return true;
+        }
+    }
+    return false;
+}
+
+
+// ===== Study =====
+function startStudy(mi, si) {
+    if(!langData || !langData[mi] || !langData[mi].sections[si]) return;
+    curModIdx = mi;
+    curSecIdx = si;
+    saveState();
+    var sec = langData[mi].sections[si];
+    document.getElementById("scr-modules").classList.add("hide");
+    document.getElementById("scr-sections").classList.add("hide");
+    var _st=document.getElementById("scr-study");_st.classList.remove("hide");_st.classList.remove("page-in");void _st.offsetWidth;_st.classList.add("page-in");
+    document.getElementById("study-sec-name").textContent = sec.name.substring(0,45);
+    var available = [];
+    for(var ci=0; ci<sec.cards.length; ci++) {
+        var c = sec.cards[ci];
+        var p = prog[c.i];
+        if(!p || !p.m) available.push(c);
+    }
+    if(available.length === 0) {
+        available = sec.cards.slice();
+        for(var ci=0; ci<sec.cards.length; ci++) {
+            var p = prog[sec.cards[ci].i];
+            if(p) { delete p.m; delete p.done; }
+        }
+        saveProg();
+    }
+    var typeOrder = ["dictation","dictationChinese","meaningChinese","word","multi","gender","plural","feminine","pastParticiple","isSeparable","presentTenseConjugation","pastTenseConjugation","konjunktivII","imperativ","comparativ","superlativ","phrase","custom","array","一般"];
+    // 词组式出题：按类型分组 → 同类型内按 word._id 聚合 → 词组间随机
+    var groups = {};
+    for(var ci=0; ci<available.length; ci++) {
+        var c = available[ci];
+        var t = c.t || "一般";
+        if(!groups[t]) groups[t] = [];
+        groups[t].push(c);
+    }
+    cards = [];
+    for(var ti=0; ti<typeOrder.length; ti++) {
+        var t = typeOrder[ti];
+        if(groups[t]) {
+            var g = groups[t].slice();
+            // 按 word._id 分组（同词卡片在一起）
+            var byWord = {}, noWord = [];
+            for(var i=0; i<g.length; i++) {
+                var wid = (g[i].word && g[i].word._id) ? g[i].word._id.toString() : null;
+                if(wid) { if(!byWord[wid]) byWord[wid]=[]; byWord[wid].push(g[i]); }
+                else noWord.push(g[i]);
+            }
+            // 词组间随机打乱
+            var wordKeys = Object.keys(byWord);
+            for(var i=wordKeys.length-1; i>0; i--) {
+                var j = Math.floor(Math.random()*(i+1));
+                var tmp = wordKeys[i]; wordKeys[i] = wordKeys[j]; wordKeys[j] = tmp;
+            }
+            // 输出：同词卡片连续，词间随机
+            for(var wi=0; wi<wordKeys.length; wi++) {
+                var wg = byWord[wordKeys[wi]];
+                for(var i=0; i<wg.length; i++) cards.push(wg[i]);
+            }
+            for(var i=0; i<noWord.length; i++) cards.push(noWord[i]);
+        }
+    }
+    cardIdx = 0;
+    sessStats = {ok:0,no:0,tot:0};
+    showCard();
+}
+
+function updateShortcutHint(state) {
+    var el = document.getElementById("shortcut-hint");
+    if(!el) return;
+    var isChoice = curCard && curCard.opts && curCard.opts.length > 0;
+    var html = "";
+    if(state === "answer") {
+        // 等待答题
+        if(isChoice) html = "<kbd>1</kbd>-<kbd>4</kbd> 选择  <kbd>Enter</kbd> 提交";
+        else html = "<kbd>Enter</kbd> 提交答案";
+    } else if(state === "correct") {
+        // 答对了
+        html = "<kbd>Space</kbd> 下一题  <kbd>E</kbd> 太简单  <kbd>D</kbd> 推迟";
+    } else if(state === "wrong") {
+        // 答错了
+        html = "<kbd>Enter</kbd> 重试";
+    } else {
+        html = "";
+    }
+    el.innerHTML = html;
+}
+var _prevProg = null;
+function markMisclick() {
+    if(!curCard || !_prevProg) return;
+    prog[curCard.i] = _prevProg;
+    _prevProg = null;
+    saveProg();
+    refreshStatsDisplay();
+    showCard();
+}
+function showCard() {
+    _cardShownAt = Date.now();
+    saveState();
+    while(cardIdx < cards.length && prog[cards[cardIdx].i] && prog[cards[cardIdx].i].m) cardIdx++;
+    if(cardIdx >= cards.length) { showHooray(); return; }
+    curCard = cards[cardIdx];
+
+    // UI Reset
+    document.getElementById("study-sec-name").textContent = (curSecIdx >= 0 && langData[curModIdx]) ? langData[curModIdx].sections[curSecIdx].name : "智能学习";
+    document.getElementById("spfill").style.width = (cards.length > 0 ? (cardIdx / cards.length * 100) : 0) + "%";
+    
+    var streak = JSON.parse(localStorage.getItem('y_streak') || '{}');
+    var si = document.getElementById("streak-indicator");
+    if(si) { si.textContent = streak.s > 1 ? "🔥 " + streak.s : ""; }
+
+    // Reset Footer to Answering State
+    var footer = document.getElementById("footer-feedback");
+    footer.className = "footer-feedback show";
+    document.getElementById("fb-content").classList.add("hide");
+    document.getElementById("action-btns").classList.add("hide");
+    document.getElementById("btn-submit").classList.remove("hide");
+    document.getElementById("btn-submit").disabled = false;
+    document.getElementById("btn-next").classList.add("hide");
+
+    // Clear secondary buttons
+    ["btn-misclick", "btn-easy", "btn-42", "btn-show"].forEach(id => document.getElementById(id).classList.add("hide"));
+
+    renderQ(curCard.q || "");
+
+    // Multi-field area
+    var mfArea = document.getElementById("multi-fields-area"); mfArea.innerHTML = "";
+    if(curCard.fields && curCard.fields.length > 1) {
+        mfArea.classList.remove("hide");
+        document.getElementById("ans-inp").classList.add("hide");
+        for(var fi=0; fi<curCard.fields.length; fi++) {
+            (function(f, idx) {
+                var div = document.createElement("div");
+                div.className = "mb-2 d-flex align-items-center gap-3";
+                div.innerHTML = `<span style="min-width:70px; font-weight:700">${f.l}</span>
+                                <input type="text" class="form-control inp flex-1" id="mf-${idx}" autocomplete="off">
+                                <span id="mf-fb-${idx}" style="min-width:30px"></span>`;
+                mfArea.appendChild(div);
+            })(curCard.fields[fi], fi);
+        }
+        document.getElementById("mf-0").focus();
+    } else {
+        mfArea.classList.add("hide");
+        var inp = document.getElementById("ans-inp");
+        if(curCard.opts && curCard.opts.length) {
+            inp.classList.add("hide");
+        } else {
+            inp.classList.remove("hide");
+            inp.value = ""; inp.disabled = false; inp.focus();
+        }
+    }
+
+    // Options area
+    var oa = document.getElementById("opts-area"); oa.innerHTML = "";
+    if(curCard.opts && curCard.opts.length) {
+        oa.classList.remove("hide");
+        curCard.opts.forEach((opt, idx) => {
+            var btn = document.createElement("button");
+            btn.className = "btn opt-btn w-100 mb-3";
+            btn.innerHTML = `<span style="color:var(--text-muted); margin-right:15px">${idx+1}</span> ${sanitizeHTML(opt)}`;
+            btn.onclick = function() {
+                oa.querySelectorAll(".opt-btn").forEach(b => b.classList.remove("sel"));
+                this.classList.add("sel");
+                document.getElementById("ans-inp").value = this.innerText.replace(/^[0-9]+\s/, "").trim();
+            };
+            oa.appendChild(btn);
+        });
+    } else {
+        oa.classList.add("hide");
+    }
+
+    document.getElementById("card-box").classList.remove("hide");
+    document.getElementById("hooray").classList.add("hide");
+    updateShortcutHint("answer");
+
+    if(curCard.au) play(curCard.au);
+}
+
+function showHooray() {
+    document.getElementById("footer-feedback").classList.remove("show");
+    document.getElementById("qarea").innerHTML = "";
+    document.getElementById("multi-fields-area").classList.add("hide");
+    document.getElementById("opts-area").classList.add("hide");
+    document.getElementById("ans-inp").classList.add("hide");
+    document.getElementById("hooray").classList.remove("hide");
+
+    var hs = document.getElementById("hooray-stats");
+    var rate = sessStats.tot > 0 ? Math.round(sessStats.ok / sessStats.tot * 100) : 0;
+    hs.innerHTML = `正确率 ${rate}% · 答对 ${sessStats.ok}/${sessStats.tot} 题`;
+}
+
+function submitAns() {
+    if(!curCard) return;
+    var subBtn = document.getElementById("btn-submit");
+    if(subBtn.disabled) return;
+
+    var isMulti = curCard.fields && curCard.fields.length > 1;
+    var inp = document.getElementById("ans-inp");
+    var ua = inp.value.trim();
+
+    if(!isMulti) {
+        if(curCard.opts && curCard.opts.length) {
+            var sel = document.querySelector(".opt-btn.sel");
+            if(!sel) return;
+            ua = sel.innerText.replace(/^[0-9]+\s/, "").trim();
+        } else if(!ua) return;
+    } else {
+        var anyEmpty = false;
+        for(var i=0; i<curCard.fields.length; i++) if(!document.getElementById("mf-"+i).value.trim()) anyEmpty = true;
+        if(anyEmpty) return;
+    }
+
+    subBtn.disabled = true;
+    var correct = false;
+
+    if(isMulti) {
+        var allCorrect = true;
+        for(var i=0; i<curCard.fields.length; i++) {
+            var fieldInp = document.getElementById("mf-"+i);
+            var fieldFb = document.getElementById("mf-fb-"+i);
+            var fieldVal = fieldInp.value.trim();
+            var fieldAns = curCard.fa[i];
+            var isFieldCorrect = checkAns(fieldVal, fieldAns);
+            if(!isFieldCorrect) allCorrect = false;
+            fieldInp.style.borderColor = isFieldCorrect ? "var(--success)" : "var(--danger)";
+            fieldFb.innerHTML = isFieldCorrect ? "✅" : `<span style="color:var(--danger)">${fieldAns}</span>`;
+        }
+        correct = allCorrect;
+    } else {
+        correct = checkAns(ua, curCard.a);
+    }
+
+    // Update Progress Data
+    if(correct) sessStats.ok++; else sessStats.no++;
+    sessStats.tot++;
+
+    var p = prog[curCard.i] || {};
+    if(correct) {
+        p.r = (p.r||0) + 1;
+        var ef = p.e || 2.5;
+        var _answerTime = Date.now() - _cardShownAt;
+        var _isFast = _answerTime < 15000 && (p.w || 0) === 0;
+
+        if(p.r <= 3 && !_isFast) {
+            var learnLevels = [0.25, 1, 24];
+            var idx = Math.min(p.r - 1, learnLevels.length - 1);
+            p.n = Date.now() + learnLevels[idx] * 3600000;
+            p.i = learnLevels[idx];
+        } else if(_isFast && p.r <= 3) {
+            p.r = 5; p.n = Date.now() + 86400000; p.i = 24;
+        } else {
+            ef = Math.min(3.0, ef + 0.1);
+            var prevDays = (p.i || 0) > 0 ? p.i / 24 : 1;
+            var newDays = Math.min(365, Math.max(1, Math.round(prevDays * ef)));
+            p.i = newDays * 24;
+            p.n = Date.now() + newDays * 86400000;
+        }
+        p.e = ef; p.w = 0; delete p.p42; p.done = true;
+    } else {
+        _prevProg = JSON.parse(JSON.stringify(p));
+        var ef = Math.max(1.3, (p.e||2.5) - 0.2);
+        var wrongCnt = (p.w || 0) + 1;
+        if(p.r <= 3) {
+            var delays = [1, 2, 5, 15];
+            p.n = Date.now() + delays[Math.min(wrongCnt-1, 3)] * 60000;
+            p.r = Math.max(0, (p.r||0) - 1);
+        } else {
+            p.i = Math.max(1, Math.round((p.i||24)/24 * 0.5)) * 24;
+            p.n = Date.now() + 60000;
+            p.r = 5;
+        }
+        p.e = ef; p.w = wrongCnt;
+    }
+    prog[curCard.i] = p;
+    saveProg();
+    refreshStatsDisplay();
+    onStudyComplete();
+
+    // Show Feedback Footer
+    var footer = document.getElementById("footer-feedback");
+    footer.className = "footer-feedback show " + (correct ? "correct" : "wrong");
+    document.getElementById("fb-content").classList.remove("hide");
+    document.getElementById("fb-icon").textContent = correct ? "✓" : "✕";
+    document.getElementById("fb-title").textContent = correct ? "太棒了！" : "再接再厉！";
+    document.getElementById("fb-sub").innerHTML = correct ? "" : `正确答案是：<span style="color:var(--danger)">${curCard.a}</span>`;
+    
+    if(!correct) {
+        var cb = document.getElementById("card-box");
+        cb.classList.remove("shake");
+        void cb.offsetWidth; // trigger reflow
+        cb.classList.add("shake");
+    }
+
+    document.getElementById("btn-submit").classList.add("hide");
+    document.getElementById("btn-next").classList.remove("hide");
+    document.getElementById("action-btns").classList.remove("hide");
+
+    if(!correct) {
+        document.getElementById("btn-show").classList.remove("hide");
+        document.getElementById("btn-misclick").classList.remove("hide");
+    } else {
+        document.getElementById("btn-easy").classList.remove("hide");
+        document.getElementById("btn-42").classList.remove("hide");
+    }
+
+    updateShortcutHint(correct ? "correct" : "wrong");
+}
+
+function nextCard() { cardIdx++; showCard(); }
+
+function markEasy() {
+    if(!curCard) return;
+    var p = prog[curCard.i] || {};
+    p.m = true; p.i = 90 * 24; p.n = Date.now() + 90 * 86400000;
+    prog[curCard.i] = p;
+    saveProg();
+    refreshStatsDisplay();
+    cardIdx++; showCard();
+}
+
+function mark42() {
+    if(!curCard) return;
+    var p = prog[curCard.i] || {};
+    p.i = 42 * 24; p.n = Date.now() + 42 * 86400000; p.p42 = true;
+    prog[curCard.i] = p;
+    saveProg();
+    refreshStatsDisplay();
+    cardIdx++; showCard();
+}
+
+var _studySkipTo = null;
+function startStudyAll() {
+    var now = Date.now();
+    var curMi = -1, curSi = -1;
+    var found = false;
+
+    // Use a while loop to find the next section to study
+    while (!found) {
+        curMi = -1; curSi = -1;
+        for(var mi=0; mi<langData.length; mi++) {
+            for(var si=0; si<langData[mi].sections.length; si++) {
+                if(_studySkipTo && (mi < _studySkipTo.mi || (mi === _studySkipTo.mi && si < _studySkipTo.si))) continue;
+                if(_studySkipTo) _studySkipTo = null;
+                var sec = langData[mi].sections[si];
+                for(var ci=0; ci<sec.cards.length; ci++) {
+                    var p = prog[sec.cards[ci].i];
+                    if(!p || !p.m) { curMi = mi; curSi = si; break; }
+                }
+                if(curMi >= 0) break;
+            }
+            if(curMi >= 0) break;
+        }
+
+        if(curMi < 0) { alert("全部学习完成！"); return; }
+
+        // Collect review cards from ALL earlier sections + current section
+        var reviewCards = [];
+        var newCards = [];
+        var typeOrder = ["dictation","dictationChinese","meaningChinese","word","multi","gender","plural","feminine","pastParticiple","isSeparable","presentTenseConjugation","pastTenseConjugation","konjunktivII","imperativ","comparativ","superlativ","phrase","custom","array","一般"];
+        
+        for(var mi=0; mi<=curMi; mi++) {
+            var maxSi = (mi === curMi) ? curSi : langData[mi].sections.length - 1;
+            for(var si=0; si<=maxSi; si++) {
+                var sec = langData[mi].sections[si];
+                for(var ci=0; ci<sec.cards.length; ci++) {
+                    var c = sec.cards[ci];
+                    var p = prog[c.i];
+                    if(p && p.m) continue;
+                    if(p && p.n && p.n < now) {
+                        reviewCards.push({card:c, modIdx:mi, secIdx:si});
+                    } else if(!p || (!p.r && !p.m)) {
+                        newCards.push({card:c, modIdx:mi, secIdx:si});
+                    }
+                }
+            }
+        }
+
+        if(reviewCards.length === 0 && newCards.length === 0) {
+            _studySkipTo = {mi: curMi, si: curSi + 1};
+            if(_studySkipTo.si >= langData[_studySkipTo.mi].sections.length) {
+                _studySkipTo.mi++; _studySkipTo.si = 0;
+            }
+            if(_studySkipTo.mi >= langData.length) {
+                alert("全部学习完成！");
+                _studySkipTo = null;
+                return;
+            }
+            // Loop will continue to find next available section
+        } else {
+            found = true;
+        }
+    }
+    _studySkipTo = null;
+    
+    function sortCards(arr) {
+        var groups = {};
+        for(var i=0; i<arr.length; i++) {
+            var t = arr[i].card.t || "\u4e00\u822c";
+            if(!groups[t]) groups[t] = [];
+            groups[t].push(arr[i]);
+        }
+        var result = [];
+        for(var ti=0; ti<typeOrder.length; ti++) {
+            var t = typeOrder[ti];
+            if(groups[t]) {
+                var g = groups[t].slice();
+                // 按 word._id 分组（同词卡片连续）
+                var byWord = {}, noWord = [];
+                for(var i=0; i<g.length; i++) {
+                    var wid = (g[i].card.word && g[i].card.word._id) ? g[i].card.word._id.toString() : null;
+                    if(wid) { if(!byWord[wid]) byWord[wid]=[]; byWord[wid].push(g[i]); }
+                    else noWord.push(g[i]);
+                }
+                var wordKeys = Object.keys(byWord);
+                for(var i=wordKeys.length-1; i>0; i--) { var j=Math.floor(Math.random()*(i+1)); var tmp=wordKeys[i]; wordKeys[i]=wordKeys[j]; wordKeys[j]=tmp; }
+                for(var wi=0; wi<wordKeys.length; wi++) {
+                    var wg = byWord[wordKeys[wi]];
+                    for(var i=0; i<wg.length; i++) result.push(wg[i]);
+                }
+                for(var i=0; i<noWord.length; i++) result.push(noWord[i]);
+            }
+        }
+        return result;
+    }
+    
+    var allCards = sortCards(reviewCards).concat(sortCards(newCards));
+    
+    curModIdx = curMi;
+    curSecIdx = curSi;
+    cards = allCards.map(function(x){ return x.card; });
+    cardIdx = 0;
+    sessStats = {ok:0, no:0, tot:0};
+    
+    document.getElementById("scr-modules").classList.add("hide");
+    document.getElementById("scr-sections").classList.add("hide");
+    document.getElementById("scr-study").classList.remove("hide");
+    document.getElementById("study-sec-name").textContent = "\u667A\u80FD\u5b66\u4e60 - " + langData[curMi].name;
+    showCard();
+}
+
+function resetAll() {
+    var lang = currentLang === "german" ? "德语" : currentLang === "english" ? "英语" : "当前语言";
+    if(!confirm("\u786e\u5b9a\u8981\u91cd\u7f6e" + lang + "\u7684\u5168\u90e8\u8fdb\u5ea6\u5417\uff1f\u6b64\u64cd\u4f5c\u4e0d\u53ef\u6062\u590d\uff01")) return;
+    var _code = prompt("请输入 RESET 确认重置");
+    if(_code !== "RESET") return;
+    // Only reset cards in current language
+    for(var mi=0; mi<langData.length; mi++) {
+        for(var si=0; si<langData[mi].sections.length; si++) {
+            for(var ci=0; ci<langData[mi].sections[si].cards.length; ci++) {
+                delete prog[langData[mi].sections[si].cards[ci].i];
+            }
+        }
+    }
+    saveProg();
+    renderMods();
+}
+
+function resetModule() {
+    if(!confirm("\u786e\u5b9a\u8981\u91cd\u7f6e\u5f53\u524d\u6a21\u5757\u7684\u8fdb\u5ea6\u5417\uff1f")) return;
+    var modName = document.getElementById("sec-mod-name").textContent;
+    for(var mi=0; mi<langData.length; mi++) {
+        if(langData[mi].name === modName) {
+            for(var si=0; si<langData[mi].sections.length; si++)
+                for(var ci=0; ci<langData[mi].sections[si].cards.length; ci++)
+                    delete prog[langData[mi].sections[si].cards[ci].i];
+            break;
+        }
+    }
+    saveProg();
+    showSecs(curModIdx);
+}
+
+
+var langData = [];
+var langFiles = {"german": "study_data_compact.json", "english": "english_data.json"};
+var langInfo = {"german": {"name": "Deutsch", "flag": "🇩🇪"}, "english": {"name": "English", "flag": "🇬🇧"}};
+
+var currentLang = "german";
+function switchLang(lang) {
+    currentLang = lang;
+    try{localStorage.setItem("y_lang",lang);}catch(e){}
+    document.getElementById("btn-lang-de").className = lang==="german" ? "btn btn-lg btn-primary" : "btn btn-lg btn-outline-secondary";
+    document.getElementById("btn-lang-en").className = lang==="english" ? "btn btn-lg btn-primary" : "btn btn-lg btn-outline-secondary";
+    var info = langInfo[lang];
+    document.getElementById("lang-desc").textContent = info.flag + " " + info.name + " 加载中...";
+    document.getElementById("mod-grid").innerHTML = "<div class='loading-bar' style='max-width:300px;margin:40px auto'></div><p class='text-center text-muted small'>正在下载词库...</p>";
+    fetch(langFiles[lang]).then(function(r){ return r.text(); }).then(function(t) {
+        // Strip UTF-8 BOM if present
+        if(t.charCodeAt(0) === 0xFEFF) t = t.substring(1);
+        var d = JSON.parse(t);
+        langData = d;
+        document.getElementById("lang-desc").textContent = info.flag + " " + info.name + " · " + langData.length + " 个模块";
+        renderMods();
+    }).catch(function(e) {
+        document.getElementById("mod-grid").innerHTML = "<div class='alert alert-danger'>加载失败: " + esc(e.message) + "</div>";
+    });
+}
+
+function renderQ(html) {
+    var area = document.getElementById("qarea");
+    area.innerHTML = sanitizeHTML(html);
+    area.querySelectorAll("audio, source, #audio-div, [id^=audio-]").forEach(function(el) {
+        if(el.tagName != "SPAN") el.remove();
+    });
+    if(curCard && curCard.au) {
+        var sp = document.createElement("span");
+        sp.style.cssText = "display:inline-block;width:36px;height:36px;cursor:pointer;vertical-align:middle;margin-left:4px";
+        sp.innerHTML = '<svg viewBox="0 0 24 24" width="36" height="36"><path fill="#17a2b8" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>';
+        sp.title = "点击重播";
+        sp.onclick = function() { play(curCard.au); var _inp=document.getElementById("ans-inp"); if(_inp && !_inp.disabled){_inp.focus();} };
+        var firstText = area.firstChild;
+        if(firstText && firstText.nodeType === 3) {
+            firstText.parentNode.insertBefore(sp, firstText.nextSibling);
+        } else {
+            if(area.firstChild){area.insertBefore(sp, area.firstChild.nextSibling);}else{area.appendChild(sp);}
+        }
+    }
+}
+
+function updateReviewCount() {
+    var el = document.getElementById("review-cnt");
+    if(!el) return;
+    try {
+        var now = Date.now(), cnt = 0;
+        for(var k in prog) {
+            var p = prog[k];
+            if(p && !p.m && p.n && p.n < now) cnt++;
+        }
+        el.textContent = "待复习: " + cnt;
+    } catch(e) {}
+}
+
+function updateTodayCnt() {
+    try {
+        var sd = JSON.parse(localStorage.getItem('y_stats')||'{}');
+        var tk = getTodayDateStr();
+        var n = (sd.d === tk) ? (sd.n || 0) : 0;
+        var el = document.getElementById('today-cnt');
+        if(el) el.textContent = '今日: ' + n;
+    } catch(e){}
+}
+function refreshStatsDisplay() {
+    updateTodayCnt();
+    updateReviewCount();
+}
+function renderMods() {
+    updateReviewCount();
+    updateTodayCnt();
+    var g = document.getElementById("mod-grid"); g.innerHTML = "";
+    var tc=0, tl=0, tm=0, twTotal=0, twMastered=0;
+    for(var mi=0; mi<langData.length; mi++) {
+        var m = langData[mi];
+        var all = [];
+        for(var si=0; si<m.sections.length; si++) all = all.concat(m.sections[si].cards);
+        var total = all.length;
+        var learned = 0, mastered = 0;
+        // 按 word._id 分组计算单词掌握度
+        var wordMap = {};
+        for(var ci=0; ci<all.length; ci++) {
+            var c = all[ci];
+            var p = prog[c.i];
+            if(p && (p.m || (p.r && p.r > 0))) learned++;
+            if(p && p.m) mastered++;
+            var wid = (c.word && c.word._id) ? c.word._id.toString() : ('_noword_' + c.i);
+            if(!wordMap[wid]) wordMap[wid] = {total:0, mastered:0};
+            wordMap[wid].total++;
+            if(p && p.m) wordMap[wid].mastered++;
+        }
+        var wordKeys = Object.keys(wordMap);
+        var wTotal = wordKeys.length, wMastered = 0;
+        for(var wi=0; wi<wordKeys.length; wi++) {
+            if(wordMap[wordKeys[wi]].mastered === wordMap[wordKeys[wi]].total) wMastered++;
+        }
+        (function(modIdx) {
+            var pct = wTotal ? Math.round(wMastered/wTotal*100) : 0;
+            tc+=total; tl+=learned; tm+=mastered; twTotal+=wTotal; twMastered+=wMastered;
+            var div = document.createElement("div");
+            div.className = "mod-card" + (wMastered===wTotal && wTotal>0?" done":"");
+            div.innerHTML = '<div class="name">'+esc(m.name)+'</div><div class="count">词汇 '+wMastered+'/'+wTotal+' ('+pct+'%)</div><div class="bar"><div class="fill" style="width:'+pct+'%"></div></div>';
+            div.onclick = function() { showSecs(modIdx); };
+            g.appendChild(div);
+        })(mi);
+    }
+    var wpct = twTotal ? Math.round(twMastered/twTotal*100) : 0;
+    var cpct = tc ? Math.round(tl/tc*100) : 0;
+    document.getElementById("gstats").innerHTML = '<div class="stat"><div class="n">'+tl+'</div><div class="l">已学</div></div><div class="stat"><div class="n">'+tm+'</div><div class="l">已掌握</div></div><div class="stat"><div class="n">'+cpct+'%</div><div class="l">总进度</div></div><div class="stat"><div class="n">'+tc+'</div><div class="l">总卡片</div></div>';
+}
+
+function showSecs(mi) {
+    curModIdx = mi;
+    var m = langData[mi];
+    document.getElementById("scr-modules").classList.add("hide");
+    var _ss=document.getElementById("scr-sections");_ss.classList.remove("hide");_ss.classList.remove("page-in");void _ss.offsetWidth;_ss.classList.add("page-in");
+    document.getElementById("sec-mod-name").textContent = m.name;
+    // 模块级进度条：基于单词掌握度
+    var all = [];
+    for(var si=0; si<m.sections.length; si++) all = all.concat(m.sections[si].cards);
+    var wordMap = {};
+    for(var ci=0; ci<all.length; ci++) {
+        var c = all[ci];
+        var p = prog[c.i];
+        var wid = (c.word && c.word._id) ? c.word._id.toString() : ('_noword_' + c.i);
+        if(!wordMap[wid]) wordMap[wid] = {total:0, mastered:0};
+        wordMap[wid].total++;
+        if(p && p.m) wordMap[wid].mastered++;
+    }
+    var wKeys = Object.keys(wordMap), wTotal = wKeys.length, wMastered = 0;
+    for(var wi=0; wi<wKeys.length; wi++) {
+        if(wordMap[wKeys[wi]].mastered === wordMap[wKeys[wi]].total) wMastered++;
+    }
+    document.getElementById("mod-pfill").style.width = (wTotal?Math.round(wMastered/wTotal*100):0)+"%";
+    var list = document.getElementById("sec-list"); list.innerHTML = "";
+    for(var si=0; si<m.sections.length; si++) {
+        var s = m.sections[si];
+        var total = s.cards.length;
+        var learned = 0, mastered = 0;
+        // 小节级单词掌握度
+        var secWordMap = {};
+        for(var ci=0; ci<s.cards.length; ci++) {
+            var c = s.cards[ci];
+            var p = prog[c.i];
+            if(p && (p.m || (p.r && p.r > 0))) learned++;
+            if(p && p.m) mastered++;
+            var wid = (c.word && c.word._id) ? c.word._id.toString() : ('_noword_' + c.i);
+            if(!secWordMap[wid]) secWordMap[wid] = {total:0, mastered:0};
+            secWordMap[wid].total++;
+            if(p && p.m) secWordMap[wid].mastered++;
+        }
+        var swKeys = Object.keys(secWordMap), swTotal = swKeys.length, swMastered = 0;
+        for(var wi=0; wi<swKeys.length; wi++) {
+            if(secWordMap[swKeys[wi]].mastered === secWordMap[swKeys[wi]].total) swMastered++;
+        }
+        (function(idx) {
+            var pct = swTotal ? Math.round(swMastered/swTotal*100) : 0;
+            var div = document.createElement("div");
+            div.className = "sec-item" + (swMastered===swTotal && swTotal>0?" done":"");
+            var dn = s.name.length>55?s.name.substring(0,55)+"...":s.name;
+            div.innerHTML = '<div><div class="sn">'+esc(dn)+'</div><div class="sm">词汇 '+swMastered+'/'+swTotal+' · 卡片 '+learned+'/'+total+'</div><div class="sb"><div class="fill" style="width:'+pct+'%"></div></div></div><div><span class="badge bg-info">'+swTotal+'词</span></div>';
+            div.onclick = function() { startStudy(mi, idx); };
+            list.appendChild(div);
+        })(si);
+    }
+}
+
+function goHome() {
+    clearState();
+    document.getElementById("scr-sections").classList.add("hide");
+    document.getElementById("scr-study").classList.add("hide");
+    document.getElementById("footer-feedback").classList.remove("show");
+    var _sm=document.getElementById("scr-modules");_sm.classList.remove("hide");_sm.classList.remove("page-in");void _sm.offsetWidth;_sm.classList.add("page-in");
+    renderMods();
+}
+
+// Event bindings
+document.getElementById("btn-submit").onclick = submitAns;
+document.getElementById("btn-misclick").onclick = markMisclick;
+document.getElementById("btn-show").onclick = function() {
+    if(!curCard) return;
+    var fb = document.getElementById("fb");
+    fb.className = "fb no"; fb.innerHTML = "正确答案："+sanitizeHTML(curCard.a);
+    document.getElementById("btn-show").classList.add("hide");
+    document.getElementById("btn-submit").classList.add("hide");
+};
+document.getElementById("btn-next").onclick = nextCard;
+document.getElementById("btn-easy").onclick = markEasy;
+document.getElementById("btn-42").onclick = mark42;
+document.getElementById("back-mod2").onclick = function() {
+    document.getElementById("scr-sections").classList.add("hide");
+    var _sm2=document.getElementById("scr-modules");_sm2.classList.remove("hide");_sm2.classList.remove("page-in");void _sm2.offsetWidth;_sm2.classList.add("page-in");
+    renderMods();
+};
+document.getElementById("back-sec").onclick = function() {
+    document.getElementById("scr-study").classList.add("hide");
+    document.getElementById("scr-sections").classList.remove("hide");
+    showSecs(curModIdx);
+};
+document.getElementById("btn-done").onclick = function() {
+    document.getElementById("scr-study").classList.add("hide");
+    document.getElementById("scr-sections").classList.remove("hide");
+    showSecs(curModIdx);
+};
+
+document.getElementById("btn-next-sec").onclick = function() {
+    document.getElementById("scr-study").classList.add("hide");
+    // Find next section with un-mastered cards
+    for(var mi=curModIdx; mi<langData.length; mi++) {
+        for(var si=(mi===curModIdx?curSecIdx+1:0); si<langData[mi].sections.length; si++) {
+            var sec = langData[mi].sections[si];
+            for(var ci=0; ci<sec.cards.length; ci++) {
+                var p = prog[sec.cards[ci].i];
+                if(!p || !p.m) {
+                    startStudy(mi, si);
+                    return;
+                }
+            }
+        }
+    }
+    alert("\u5168\u90e8\u5b66\u4e60\u5b8c\u6210\uff01");
+    goHome();
+};
+document.addEventListener("keydown", function(e) {
+    // Enter: 提交或下一题
+    if(e.key==="Enter") {
+        if(!document.getElementById("btn-submit").classList.contains("hide")) submitAns();
+        else if(!document.getElementById("btn-next").classList.contains("hide")) nextCard();
+        else if(!document.getElementById("btn-next-sec").classList.contains("hide")) document.getElementById("btn-next-sec").click();
+    }
+    // 数字键 1-4 快速选择选项
+    if(e.key >= "1" && e.key <= "4" && !document.getElementById("btn-submit").classList.contains("hide")) {
+        var oa = document.getElementById("opts-area");
+        if(oa && !oa.classList.contains("hide")) {
+            var idx = parseInt(e.key) - 1;
+            var opts = oa.querySelectorAll("div");
+            if(opts[idx]) opts[idx].click();
+        }
+    }
+    // E键：太简单了
+    if((e.key==="e"||e.key==="E") && !document.getElementById("btn-easy").classList.contains("hide") && (!document.activeElement || document.activeElement.tagName !== "INPUT")) {
+        e.preventDefault();
+        markEasy();
+    }
+    // D键：42天后再问我
+    if((e.key==="d"||e.key==="D") && !document.getElementById("btn-42").classList.contains("hide") && (!document.activeElement || document.activeElement.tagName !== "INPUT")) {
+        e.preventDefault();
+        mark42();
+    }
+    // 空格键：下一题
+    if(e.key === " " && !document.getElementById("btn-next").classList.contains("hide") && (!document.activeElement || document.activeElement.tagName !== "INPUT")) {
+        e.preventDefault();
+        nextCard();
+    }
+});
+
+// Init
+document.getElementById("btn-start-study").onclick = function(){startStudyAll();};
+switchLang(localStorage.getItem("y_lang")||"german");</script>
+<div style="text-align:center;font-size:.7rem;color:#aaa;padding:10px 0">© 2026 Michael.Liu</div>
+</body>
+</html>
+
+
+
+
+
