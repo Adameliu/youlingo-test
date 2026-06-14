@@ -60,32 +60,32 @@ body { background: var(--bg); font-family: 'Nunito', system-ui, -apple-system, s
 .sec-item:active { transform: translateY(4px); box-shadow: 0 0 0 transparent; }
 
 /* Study Interface */
-.card-box { background: var(--surface); border-radius: 20px; padding: 24px; margin-top: 16px; border: 2px solid var(--border); box-shadow: 0 4px 0 var(--border); transition: all .2s; }
+.card-box { background: var(--surface); border-radius: 20px; padding: 20px; margin-top: 10px; border: 2px solid var(--border); box-shadow: 0 4px 0 var(--border); transition: all .2s; }
 .card-box.wrong { border-color: var(--danger); box-shadow: 0 4px 0 var(--danger-border); animation: shake .4s ease; }
 .card-box.correct { border-color: var(--success); box-shadow: 0 4px 0 var(--success-border); }
-.q-text { font-size: 1.5rem; font-weight: 800; line-height: 1.4; margin-bottom: 24px; color: #4b4b4b; }
-.pinfo { display: flex; justify-content: space-between; font-size: .85rem; font-weight: 800; color: var(--text-muted); margin-bottom: 12px; }
+.q-text { font-size: 1.4rem; font-weight: 800; line-height: 1.3; margin-bottom: 16px; color: #4b4b4b; }
+.pinfo { display: flex; justify-content: space-between; font-size: .8rem; font-weight: 800; color: var(--text-muted); margin-bottom: 8px; }
 
-#opts-area { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-.opt-btn { font-size: 1.1rem; font-weight: 700; padding: 14px 20px; border-radius: 16px; border: 2px solid var(--border); background: var(--surface); cursor: pointer; transition: all .1s ease; text-align: left; box-shadow: 0 4px 0 var(--border); color: var(--text-main); }
+#opts-area { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.opt-btn { font-size: 1rem; font-weight: 700; padding: 12px 18px; border-radius: 16px; border: 2px solid var(--border); background: var(--surface); cursor: pointer; transition: all .1s ease; text-align: left; box-shadow: 0 4px 0 var(--border); color: var(--text-main); }
 .opt-btn:hover { background: #f7f7f7; }
 .opt-btn.sel { border-color: var(--primary); background: var(--primary-light); color: var(--primary); box-shadow: 0 4px 0 var(--primary); }
 
-.inp { font-size: 1.2rem; font-weight: 700; text-align: left; padding: 15px; border-radius: 16px; border: 2px solid var(--border); background: #f7f7f7; transition: all .2s ease; width: 100%; }
+.inp { font-size: 1.1rem; font-weight: 700; text-align: left; padding: 12px; border-radius: 16px; border: 2px solid var(--border); background: #f7f7f7; transition: all .2s ease; width: 100%; }
 .inp:focus { border-color: var(--primary); background: #fff; outline: none; }
 .inp.ok { border-color: var(--success) !important; background: var(--success-light) !important; color: var(--success-border); }
 .inp.no { border-color: var(--danger) !important; background: var(--danger-light) !important; color: var(--danger-border); }
 
-.fb { padding: 16px; border-radius: 16px; margin-top: 16px; font-size: 1rem; font-weight: 800; }
+.fb { padding: 12px; border-radius: 16px; margin-top: 12px; font-size: 0.95rem; font-weight: 800; }
 .fb.ok { background: var(--success-light); color: var(--success-border); }
 .fb.no { background: var(--danger-light); color: var(--danger-border); }
 .fb.fb-info { background: var(--primary-light); color: var(--primary); }
 
-.acts { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; justify-content: center; }
-.acts .btn { flex: 1; min-width: 120px; }
+.acts { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; justify-content: center; }
+.acts .btn { flex: 1; min-width: 110px; padding: 10px 15px; }
 
-.pbar { height: 12px; background: var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 16px; }
-.pbar .fill { height: 100%; background: var(--success); border-radius: 6px; transition: width .4s ease; }
+.pbar { height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; margin-bottom: 12px; }
+.pbar .fill { height: 100%; background: var(--success); border-radius: 5px; transition: width .4s ease; }
 
 .hooray { text-align: center; padding: 40px 20px; }
 .hooray i { font-size: 4rem; color: var(--success); margin-bottom: 20px; display: inline-block; }
@@ -106,6 +106,9 @@ body { background: var(--bg); font-family: 'Nunito', system-ui, -apple-system, s
 .stat:hover { transform: translateY(-2px); border-color: var(--primary); box-shadow: 0 4px 0 var(--primary-border); }
 .stat .n { font-size: 1.6rem; font-weight: 800; color: var(--primary); }
 .stat .l { font-size: .75rem; font-weight: 700; color: var(--text-muted); margin-top: 4px; }
+.loading-bar { height: 4px; background: var(--border); overflow: hidden; position: relative; border-radius: 2px; }
+.loading-bar::after { content: ""; position: absolute; left: -50%; width: 50%; height: 100%; background: var(--primary); animation: loading 1.5s infinite linear; }
+@keyframes loading { from { left: -50%; } to { left: 100%; } }
 </style>
 </head>
 <body>
@@ -115,7 +118,7 @@ body { background: var(--bg); font-family: 'Nunito', system-ui, -apple-system, s
     <span class="fw-bold" style="color:var(--primary); cursor:pointer; font-size:1.4rem; letter-spacing:-0.5px" onclick="goHome()">Youlingo友邻国</span>
   </div>
   <div class="ms-auto d-flex align-items-center gap-4">
-    <div id="streak-cnt" class="d-flex align-items-center gap-1 fw-bold" style="color:var(--warning); display:none !important">
+    <div id="streak-cnt" class="d-flex align-items-center gap-1 fw-bold" style="color:var(--warning); display:none">
       <span>🔥</span><span id="streak-num">0</span>
     </div>
     <div id="today-cnt-box" class="d-flex align-items-center gap-1 fw-bold" style="color:var(--primary)">
@@ -136,7 +139,7 @@ body { background: var(--bg); font-family: 'Nunito', system-ui, -apple-system, s
   </div>
   <div id="login-error" class="alert alert-danger hide"></div>
   <div class="mb-3">
-    <input type="email" id="login-email" class="form-control inp" placeholder="邮箱" autocomplete="email">
+    <input type="email" id="login-email" class="form-control inp" placeholder="邮箱" autocomplete="email" onkeydown="if(event.key==='Enter')login()">
   </div>
   <div class="mb-4">
     <input type="password" id="login-pass" class="form-control inp" placeholder="密码" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
