@@ -98,6 +98,14 @@ body { background: var(--bg); font-family: 'Nunito', system-ui, -apple-system, s
   20%, 40%, 60%, 80% { transform: translateX(5px); }
 }
 .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+.hide { display: none !important; }
+.mod-card .bar { height: 6px; background: var(--border); border-radius: 3px; margin-top: 10px; overflow: hidden; }
+.mod-card .bar .fill { height: 100%; background: var(--primary); border-radius: 3px; transition: width .5s ease; }
+.stats { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+.stat { background: var(--surface); border-radius: 16px; padding: 14px 10px; flex: 1; min-width: 80px; text-align: center; border: 2px solid var(--border); box-shadow: 0 4px 0 var(--border); transition: all .15s; }
+.stat:hover { transform: translateY(-2px); border-color: var(--primary); box-shadow: 0 4px 0 var(--primary-border); }
+.stat .n { font-size: 1.6rem; font-weight: 800; color: var(--primary); }
+.stat .l { font-size: .75rem; font-weight: 700; color: var(--text-muted); margin-top: 4px; }
 </style>
 </head>
 <body>
@@ -689,22 +697,22 @@ function preloadAudio(au) {
 function norm(s) { return s.replace(/\s+/g," ").trim(); }
 
 function stripPunct(s) {
-    return s.replace(/[.,!?\u3002\uFF0C\u3001\uFF01\uFF1F\u002E]+$/g, "");
+    return s.replace(/[.,!?。，、！？.]+$/g, "");
 }
 
-function normApost(s) { return s.replace(/[\u2018\u2019\u201A\u201B\u2032\u2035`']/g, "'"); }
+function normApost(s) { return s.replace(/[‘’‚‛′‵`']/g, "'"); }
 
 function checkAns(ua, ca) {
     if(!ua || !ca) return false;
     var u = normApost(norm(ua));
     var up = stripPunct(u);
-    var alts = ca.split("\u6216").map(function(s){ return normApost(norm(s)); }).filter(Boolean);
+    var alts = ca.split("或").map(function(s){ return normApost(norm(s)); }).filter(Boolean);
     for(var i=0; i<alts.length; i++) {
         var a = norm(alts[i]);
         var ap = stripPunct(a);
         if(u === a || up === ap) return true;
     }
-    if(ca.indexOf("\u6216") === -1 && ca.indexOf(",") >= 0) {
+    if(ca.indexOf("或") === -1 && ca.indexOf(",") >= 0) {
         var ca2 = ca.split(",").map(function(s){ return normApost(norm(s)); }).filter(Boolean);
         for(var i=0; i<ca2.length; i++) {
             var a = normApost(norm(ca2[i]));
@@ -1111,7 +1119,7 @@ function startStudyAll() {
     function sortCards(arr) {
         var groups = {};
         for(var i=0; i<arr.length; i++) {
-            var t = arr[i].card.t || "\u4e00\u822c";
+            var t = arr[i].card.t || "一般";
             if(!groups[t]) groups[t] = [];
             groups[t].push(arr[i]);
         }
@@ -1150,13 +1158,13 @@ function startStudyAll() {
     document.getElementById("scr-modules").classList.add("hide");
     document.getElementById("scr-sections").classList.add("hide");
     document.getElementById("scr-study").classList.remove("hide");
-    document.getElementById("study-sec-name").textContent = "\u667A\u80FD\u5b66\u4e60 - " + langData[curMi].name;
+    document.getElementById("study-sec-name").textContent = "智能学习 - " + langData[curMi].name;
     showCard();
 }
 
 function resetAll() {
     var lang = currentLang === "german" ? "德语" : currentLang === "english" ? "英语" : "当前语言";
-    if(!confirm("\u786e\u5b9a\u8981\u91cd\u7f6e" + lang + "\u7684\u5168\u90e8\u8fdb\u5ea6\u5417\uff1f\u6b64\u64cd\u4f5c\u4e0d\u53ef\u6062\u590d\uff01")) return;
+    if(!confirm("确定要重置" + lang + "的全部进度吗？此操作不可恢复！")) return;
     var _code = prompt("请输入 RESET 确认重置");
     if(_code !== "RESET") return;
     // Only reset cards in current language
@@ -1172,7 +1180,7 @@ function resetAll() {
 }
 
 function resetModule() {
-    if(!confirm("\u786e\u5b9a\u8981\u91cd\u7f6e\u5f53\u524d\u6a21\u5757\u7684\u8fdb\u5ea6\u5417\uff1f")) return;
+    if(!confirm("确定要重置当前模块的进度吗？")) return;
     var modName = document.getElementById("sec-mod-name").textContent;
     for(var mi=0; mi<langData.length; mi++) {
         if(langData[mi].name === modName) {
@@ -1385,7 +1393,8 @@ document.getElementById("back-mod2").onclick = function() {
     var _sm2=document.getElementById("scr-modules");_sm2.classList.remove("hide");_sm2.classList.remove("page-in");void _sm2.offsetWidth;_sm2.classList.add("page-in");
     renderMods();
 };
-document.getElementById("back-sec").onclick = function() {
+var _bs = document.getElementById("back-sec");
+if(_bs) _bs.onclick = function() {
     document.getElementById("scr-study").classList.add("hide");
     document.getElementById("scr-sections").classList.remove("hide");
     showSecs(curModIdx);
@@ -1411,7 +1420,7 @@ document.getElementById("btn-next-sec").onclick = function() {
             }
         }
     }
-    alert("\u5168\u90e8\u5b66\u4e60\u5b8c\u6210\uff01");
+    alert("全部学习完成！");
     goHome();
 };
 document.addEventListener("keydown", function(e) {
