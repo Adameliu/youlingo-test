@@ -97,6 +97,7 @@ body { background: var(--bg); font-family: 'Nunito', system-ui, -apple-system, s
   20%, 40%, 60%, 80% { transform: translateX(5px); }
 }
 .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+.inp::placeholder { color: #ccc; font-weight: 400; }
 .hide { display: none !important; }
 .mod-card .bar { height: 6px; background: var(--border); border-radius: 3px; margin-top: 10px; overflow: hidden; }
 .mod-card .bar .fill { height: 100%; background: var(--primary); border-radius: 3px; transition: width .5s ease; }
@@ -138,10 +139,10 @@ body { background: var(--bg); font-family: 'Nunito', system-ui, -apple-system, s
     <input type="email" id="login-email" class="form-control inp" placeholder="邮箱" autocomplete="email">
   </div>
   <div class="mb-4">
-    <input type="password" id="login-pass" class="form-control inp" placeholder="密码" autocomplete="current-password">
+    <input type="password" id="login-pass" class="form-control inp" placeholder="密码" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
   </div>
   <button id="btn-login" class="btn btn-primary w-100 mb-3" onclick="login()">登录</button>
-  <button class="btn btn-outline-secondary w-100" onclick="demoLogin()">🎮 Demo 体验</button>
+  <button class="btn btn-outline-secondary w-100" onclick="demoLogin()">🎮 Demo 体验（无需账号）</button>
 </div>
 
 <div class="container" id="app" style="display:none; padding-top:40px">
