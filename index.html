@@ -60,31 +60,31 @@ body { background: var(--bg); font-family: 'Nunito', system-ui, -apple-system, s
 .sec-item:active { transform: translateY(4px); box-shadow: 0 0 0 transparent; }
 
 /* Study Interface */
-#scr-study { margin-top: -25px; }
-.card-box { background: var(--surface); border-radius: 20px; padding: 15px; margin-top: 5px; border: 2px solid var(--border); box-shadow: 0 4px 0 var(--border); transition: all .2s; }
-.card-box.wrong { border-color: var(--danger); box-shadow: 0 4px 0 var(--danger-border); animation: shake .4s ease; }
-.card-box.correct { border-color: var(--success); box-shadow: 0 4px 0 var(--success-border); }
-.q-text { font-size: 1.3rem; font-weight: 800; line-height: 1.25; margin-bottom: 12px; color: #4b4b4b; }
-.pinfo { display: flex; justify-content: space-between; font-size: .75rem; font-weight: 800; color: var(--text-muted); margin-bottom: 6px; }
+#scr-study { margin-top: 0; }
+.card-box { background: var(--surface); border-radius: 18px; padding: 12px; margin-top: 5px; border: 2px solid var(--border); box-shadow: 0 3px 0 var(--border); transition: all .2s; }
+.card-box.wrong { border-color: var(--danger); box-shadow: 0 3px 0 var(--danger-border); animation: shake .4s ease; }
+.card-box.correct { border-color: var(--success); box-shadow: 0 3px 0 var(--success-border); }
+.q-text { font-size: 1.25rem; font-weight: 800; line-height: 1.2; margin-bottom: 10px; color: #4b4b4b; }
+.pinfo { display: flex; justify-content: space-between; font-size: .7rem; font-weight: 800; color: var(--text-muted); margin-bottom: 4px; }
 
-#opts-area { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
-.opt-btn { font-size: 0.95rem; font-weight: 700; padding: 8px 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--surface); cursor: pointer; transition: all .1s ease; text-align: left; box-shadow: 0 3px 0 var(--border); color: var(--text-main); }
+#opts-area { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+.opt-btn { font-size: 0.9rem; font-weight: 700; padding: 6px 14px; border-radius: 12px; border: 2px solid var(--border); background: var(--surface); cursor: pointer; transition: all .1s ease; text-align: left; box-shadow: 0 3px 0 var(--border); color: var(--text-main); }
 .opt-btn:hover { background: #f7f7f7; }
 .opt-btn.sel { border-color: var(--primary); background: var(--primary-light); color: var(--primary); box-shadow: 0 3px 0 var(--primary); }
 
-.inp { font-size: 1.05rem; font-weight: 700; text-align: left; padding: 10px 14px; border-radius: 14px; border: 2px solid var(--border); background: #f7f7f7; transition: all .2s ease; width: 100%; }
+.inp { font-size: 1rem; font-weight: 700; text-align: left; padding: 8px 12px; border-radius: 12px; border: 2px solid var(--border); background: #f7f7f7; transition: all .2s ease; width: 100%; }
 .inp:focus { border-color: var(--primary); background: #fff; outline: none; }
 .inp.ok { border-color: var(--success) !important; background: var(--success-light) !important; color: var(--success-border); }
 .inp.no { border-color: var(--danger) !important; background: var(--danger-light) !important; color: var(--danger-border); }
 
-.fb { padding: 10px; border-radius: 14px; margin-top: 10px; font-size: 0.9rem; font-weight: 800; }
+.fb { padding: 8px; border-radius: 12px; margin-top: 8px; font-size: 0.85rem; font-weight: 800; }
 .fb.ok { background: var(--success-light); color: var(--success-border); }
 .fb.no { background: var(--danger-light); color: var(--danger-border); }
 .fb.fb-info { background: var(--primary-light); color: var(--primary); }
 
-.acts { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; justify-content: center; }
-.acts .btn { flex: 1; min-width: 100px; padding: 8px 12px; font-size: 0.8rem; }
-.shortcut-hint { margin-top: 15px; color: var(--text-muted); font-size: 0.7rem; font-weight: 700; text-align: center; }
+.acts { display: flex; gap: 5px; margin-top: 10px; flex-wrap: wrap; justify-content: center; }
+.acts .btn { flex: 1; min-width: 90px; padding: 6px 10px; font-size: 0.75rem; letter-spacing: 0.5px; }
+.shortcut-hint { margin-top: 10px; color: var(--text-muted); font-size: 0.65rem; font-weight: 700; text-align: center; }
 .shortcut-hint kbd { background: #f0f0f0; color: #777; border: 1px solid #ddd; border-bottom: 2px solid #ccc; border-radius: 4px; padding: 1px 5px; font-family: inherit; font-size: 0.7rem; margin: 0 2px; }
 
 .pbar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 10px; }
