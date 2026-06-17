@@ -47,6 +47,15 @@ body { background: var(--bg); font-family: 'Nunito', system-ui, -apple-system, s
 .btn-danger { background: var(--danger); border-color: var(--danger-border); box-shadow: 0 4px 0 var(--danger-border); color: #fff; }
 .btn-danger:active { transform: translateY(4px); box-shadow: 0 0 0 transparent; }
 
+.btn-warning { background: var(--warning); border-color: var(--warning-border); box-shadow: 0 4px 0 var(--warning-border); color: #fff; }
+.btn-warning:active { transform: translateY(4px); box-shadow: 0 0 0 transparent; }
+
+.btn-info { background: #1cb0f6; border-color: #1899d6; box-shadow: 0 4px 0 #1899d6; color: #fff; }
+.btn-info:active { transform: translateY(4px); box-shadow: 0 0 0 transparent; }
+
+.btn-secondary { background: #afafaf; border-color: #8e8e8e; box-shadow: 0 4px 0 #8e8e8e; color: #fff; }
+.btn-secondary:active { transform: translateY(4px); box-shadow: 0 0 0 transparent; }
+
 .btn-outline-secondary { border: 2px solid var(--border); background: #fff; color: var(--text-muted); box-shadow: 0 4px 0 var(--border); }
 .btn-outline-secondary:active { transform: translateY(4px); box-shadow: 0 0 0 transparent; }
 
@@ -222,7 +231,7 @@ body { background: var(--bg); font-family: 'Nunito', system-ui, -apple-system, s
 <button class="btn btn-sm btn-success hide" id="btn-next">下一题</button>
 <button class="btn btn-sm btn-warning hide" id="btn-easy">太简单了</button>
 <button class="btn btn-sm btn-info hide" id="btn-42" title="42 天后再见面">42天后再问我</button>
-<button class="btn btn-sm hide" id="btn-misclick">手抖了</button>
+<button class="btn btn-sm btn-outline-secondary hide" id="btn-misclick">手抖了</button>
 </div>
 <div class="shortcut-hint" id="shortcut-hint"></div>
 <div class="hooray hide fade-in" id="hooray">
