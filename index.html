@@ -1531,16 +1531,6 @@ document.addEventListener("keydown", function(e) {
         e.preventDefault();
         markEasy();
     }
-    // R键：重播音频
-    if((e.key==="r"||e.key==="R") && curCard && curCard.au) {
-        e.preventDefault();
-        play(curCard.au);
-        // 删除输入框里多出来的字母r
-        var _ri = document.getElementById("ans-inp");
-        if(_ri && _ri.value && _ri.value.endsWith("r")) {
-            _ri.value = _ri.value.slice(0, -1);
-        }
-    }
     // D键：42天后再问我
     if((e.key==="d"||e.key==="D") && !document.getElementById("btn-42").classList.contains("hide") && (!document.activeElement || document.activeElement.tagName !== "INPUT")) {
         e.preventDefault();
