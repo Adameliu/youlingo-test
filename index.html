@@ -1515,21 +1515,10 @@ document.getElementById("btn-next-sec").onclick = function() {
     goHome();
 };
 document.addEventListener("keydown", function(e) {
-    // Enter: 提交或下一题（输入框为空且有音频时重播）
+    // Enter: 提交或下一题
     if(e.key==="Enter") {
-        var _subBtn=document.getElementById("btn-submit");
-        if(!_subBtn.classList.contains("hide")) {
-            var _inp=document.getElementById("ans-inp");
-            var _oa=document.getElementById("opts-area");
-            var _isOpts=_oa && !_oa.classList.contains("hide");
-            var _isEmpty=_inp && !_isOpts && (!_inp.value || !_inp.value.trim());
-            if(_isEmpty && curCard && curCard.au) {
-                e.preventDefault();
-                play(curCard.au);
-            } else {
-                submitAns();
-            }
-        } else if(!document.getElementById("btn-next").classList.contains("hide")) nextCard();
+        if(!document.getElementById("btn-submit").classList.contains("hide")) submitAns();
+        else if(!document.getElementById("btn-next").classList.contains("hide")) nextCard();
         else if(!document.getElementById("btn-next-sec").classList.contains("hide")) document.getElementById("btn-next-sec").click();
     }
     // 数字键 1-4 快速选择选项
