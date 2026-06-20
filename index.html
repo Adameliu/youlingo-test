@@ -855,7 +855,7 @@ function showCard() {
                 var inp = document.createElement("input");
                 inp.type = "text";
                 inp.className = "form-control inp";
-                inp.style.cssText = "flex:1;text-align:center;padding:8px;border-radius:6px;border:2px solid #dee2e6";
+                inp.style.cssText = "flex:1;text-align:left";
                 inp.id = "mf-"+idx;
                 inp.autocomplete = "off";
                 var fb = document.createElement("div");
@@ -888,14 +888,13 @@ function showCard() {
                 label.innerHTML = sanitizeHTML(opt);
                 div.appendChild(radio); div.appendChild(label);
                 div.onclick = function() {
-                    document.querySelectorAll("#opts-area > div").forEach(function(d){
-                        d.classList.remove("sel");
+                    document.querySelectorAll("#opts-area .opt-btn").forEach(function(d){
+                        d.classList.remove("sel"); var r=d.querySelector("input[type=radio]"); if(r) r.checked=false;
                     });
                     this.classList.add("sel");
                     this.querySelector("input[type=radio]").checked = true;
-                    var txt = document.createElement("div");
-                    txt.innerHTML = this.querySelector("span").innerHTML;
-                    inp.value = txt.textContent.trim();
+                    var _lbl = this.querySelector("span");
+                    inp.value = _lbl ? _lbl.textContent.trim() : "";
                 };
                 oa.appendChild(div);
             })(curCard.opts[oi]);
@@ -982,7 +981,6 @@ function submitAns() {
             if(!document.getElementById("mf-"+fi).value.trim()) anyEmpty = true;
         }
         if(anyEmpty) { _subBtn.disabled = false; return; }
-        var allCorrect = true;
         var totalFb = "";
         for(var fi=0; fi<curCard.fields.length; fi++) {
             var fi_inp = document.getElementById("mf-"+fi);
@@ -993,7 +991,7 @@ function submitAns() {
             var fieldCorrect = (fa && ua) ? checkAns(ua, fa) : false;
             if(!fieldCorrect) allCorrect = false;
             fi_inp.className = "form-control inp";
-            fi_inp.style.borderColor = fieldCorrect ? "var(--success)" : "var(--danger)";
+            fi_inp.classList.add(fieldCorrect ? "ok" : "no");
             if(fi_fb) {
                 fi_fb.textContent = fieldCorrect ? "✓" : (fa ? fa : "");
                 fi_fb.style.color = fieldCorrect ? "var(--success)" : "var(--danger)";
@@ -1027,7 +1025,7 @@ function submitAns() {
             sd.ids.push(curCard.i);
             sd.n = sd.ids.length;
             localStorage.setItem('y_stats', JSON.stringify(sd));
-            _supa.from("daily_stats").upsert({uid:_uid,data:sd},{onConflict:"uid"}).select().catch(function(e){});
+            _supa.from("daily_stats").upsert({uid:_uid,data:sd},{onConflict:"uid"}).select().catch(function(e){console.log('UPSERT_ERR:',e.message)});
         }
     } catch(e){}
     if(correct) {
@@ -1083,7 +1081,14 @@ function submitAns() {
         p.done = true;
         prog[curCard.i] = p;
     } else {
-        if(!correct) { _prevProg = JSON.parse(JSON.stringify(prog[curCard.i] || {})); inp.disabled = false; inp.focus();if(window.innerWidth<700){setTimeout(function(){inp.scrollIntoView({behavior:"smooth",block:"center"});},300);} document.getElementById("btn-submit").disabled=false; var _cb=document.getElementById("card-box");_cb.classList.remove("correct");_cb.classList.add("wrong"); }
+        if(!correct) {
+            _prevProg = JSON.parse(JSON.stringify(prog[curCard.i] || {}));
+            inp.disabled = false; inp.value = "";
+            if(window.innerWidth<700){setTimeout(function(){inp.scrollIntoView({behavior:"smooth",block:"center"});},300);}
+            document.getElementById("btn-submit").disabled = false;
+            var _cb=document.getElementById("card-box");
+            _cb.classList.remove("correct"); _cb.classList.add("wrong");
+        }
         document.getElementById("btn-submit").classList.remove("hide");
         document.getElementById("btn-show").classList.remove("hide");
         document.getElementById("btn-misclick").classList.remove("hide");
@@ -1393,7 +1398,6 @@ function renderMods() {
             g.appendChild(div);
         })(mi);
     }
-    var wpct = twTotal ? Math.round(twMastered/twTotal*100) : 0;
     var cpct = tc ? Math.round(tl/tc*100) : 0;
     document.getElementById("gstats").innerHTML = '<div class="stat"><div class="n">'+tl+'</div><div class="l">已学</div></div><div class="stat"><div class="n">'+tm+'</div><div class="l">已掌握</div></div><div class="stat"><div class="n">'+cpct+'%</div><div class="l">总进度</div></div><div class="stat"><div class="n">'+tc+'</div><div class="l">总卡片</div></div>';
 }
@@ -1527,12 +1531,12 @@ document.addEventListener("keydown", function(e) {
         }
     }
     // E键：太简单了
-    if((e.key==="e"||e.key==="E") && !document.getElementById("btn-easy").classList.contains("hide") && (!document.activeElement || document.activeElement.tagName !== "INPUT")) {
+    if((e.key==="e"||e.key==="E") && !document.getElementById("btn-easy").classList.contains("hide") && (!document.activeElement || (document.activeElement.tagName !== "INPUT" && !(document.activeElement.id && document.activeElement.id.indexOf("mf-")===0)))) {
         e.preventDefault();
         markEasy();
     }
     // D键：42天后再问我
-    if((e.key==="d"||e.key==="D") && !document.getElementById("btn-42").classList.contains("hide") && (!document.activeElement || document.activeElement.tagName !== "INPUT")) {
+    if((e.key==="d"||e.key==="D") && !document.getElementById("btn-42").classList.contains("hide") && (!document.activeElement || (document.activeElement.tagName !== "INPUT" && !(document.activeElement.id && document.activeElement.id.indexOf("mf-")===0)))) {
         e.preventDefault();
         mark42();
     }
