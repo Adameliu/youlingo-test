@@ -1517,7 +1517,14 @@ document.getElementById("btn-next-sec").onclick = function() {
 document.addEventListener("keydown", function(e) {
     // Enter: 提交或下一题
     if(e.key==="Enter") {
-        if(!document.getElementById("btn-submit").classList.contains("hide")) submitAns();
+        if(!document.getElementById("btn-submit").classList.contains("hide")) {
+            var _inp=document.getElementById("ans-inp");
+            var _oa=document.getElementById("opts-area");
+            var _isOpts=_oa && !_oa.classList.contains("hide");
+            var _isEmpty=_inp && !_isOpts && (!_inp.value || !_inp.value.trim());
+            if(_isEmpty && curCard && curCard.au) { play(curCard.au); }
+            else { submitAns(); }
+        }
         else if(!document.getElementById("btn-next").classList.contains("hide")) nextCard();
         else if(!document.getElementById("btn-next-sec").classList.contains("hide")) document.getElementById("btn-next-sec").click();
     }
