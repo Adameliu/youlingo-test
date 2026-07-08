@@ -1,0 +1,16 @@
+name: Supabase Keep Alive
+
+on:
+  schedule:
+    - cron: '0 0 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: sb_publishable_1DKV3HyHb9yf5riwUGNwLQ_99TA-F45" \
+            "https://iwpzcmmwtnvcphatrucd.supabase.co/rest/v1/progress?select=created_at&limit=1"
