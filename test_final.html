@@ -693,21 +693,31 @@ function stripPunct(s) {
 
 function normApost(s) { return s.replace(/[\u2018\u2019\u201A\u201B\u2032\u2035`']/g, "'"); }
 
+function normChinese(s) {
+    return s.replace(/^是的$/, "是").replace(/^不是$/, "否");
+}
+
 function checkAns(ua, ca) {
     if(!ua || !ca) return false;
     var u = normApost(norm(ua));
+    u = normChinese(u);
     var up = stripPunct(u);
+    up = normChinese(up);
     var alts = ca.split("\u6216").map(function(s){ return normApost(norm(s)); }).filter(Boolean);
     for(var i=0; i<alts.length; i++) {
         var a = norm(alts[i]);
+        a = normChinese(a);
         var ap = stripPunct(a);
+        ap = normChinese(ap);
         if(u === a || up === ap) return true;
     }
     if(ca.indexOf("\u6216") === -1 && ca.indexOf(",") >= 0) {
         var ca2 = ca.split(",").map(function(s){ return normApost(norm(s)); }).filter(Boolean);
         for(var i=0; i<ca2.length; i++) {
             var a = normApost(norm(ca2[i]));
+            a = normChinese(a);
             var ap = stripPunct(a);
+            ap = normChinese(ap);
             if(u === a || up === ap) return true;
         }
     }
