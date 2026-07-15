@@ -1,4 +1,4 @@
-const CACHE = "youlingo-v3";
+const CACHE = "youlingo-v4";
 const AUDIO_CACHE = "youlingo-audio-v1";
 const CACHE_ASSETS = [
   "./",
