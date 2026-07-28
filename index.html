@@ -699,19 +699,25 @@ function normChinese(s) {
     return s.replace(/^是的$/, "是").replace(/^不是$/, "否");
 }
 
+function stripAllPunct(s) {
+    return s.replace(/[\p{P}\p{Z}]+/gu, "");
+}
+
 function checkAns(ua, ca) {
     if(!ua || !ca) return false;
     var u = normApost(norm(ua));
     u = normChinese(u);
     var up = stripPunct(u);
     up = normChinese(up);
+    var usp = stripAllPunct(u);
     var alts = ca.split("或").map(function(s){ return normApost(norm(s)); }).filter(Boolean);
     for(var i=0; i<alts.length; i++) {
         var a = norm(alts[i]);
         a = normChinese(a);
         var ap = stripPunct(a);
         ap = normChinese(ap);
-        if(u === a || up === ap) return true;
+        var asp = stripAllPunct(a);
+        if(u === a || up === ap || usp === asp) return true;
     }
     if(ca.indexOf("或") === -1 && ca.indexOf(",") >= 0) {
         var ca2 = ca.split(",").map(function(s){ return normApost(norm(s)); }).filter(Boolean);
@@ -720,7 +726,8 @@ function checkAns(ua, ca) {
             a = normChinese(a);
             var ap = stripPunct(a);
             ap = normChinese(ap);
-            if(u === a || up === ap) return true;
+            var asp = stripAllPunct(a);
+            if(u === a || up === ap || usp === asp) return true;
         }
     }
     return false;
